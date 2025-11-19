@@ -12,9 +12,11 @@ interface HistoryListProps {
 export function HistoryList({ history, members }: HistoryListProps) {
   if (history.length === 0) {
     return (
-      <Card className="p-6">
-        <p className="text-center text-muted-foreground">
-          No lunch history yet. Complete your first lunch period to see it here!
+      <Card className="p-12 text-center">
+        <div className="text-5xl mb-4">📜</div>
+        <h3 className="font-medium mb-2">No lunch history yet</h3>
+        <p className="text-sm text-muted-foreground">
+          Complete your first lunch period to start building memories!
         </p>
       </Card>
     )

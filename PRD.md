@@ -1,23 +1,37 @@
 # Planning Guide
 
-A collaborative team lunch rostering system that uses points-based round-robin scheduling to fairly distribute the responsibility of organizing team lunches, while adding light gamification through venue voting to recognize members who consistently choose great spots.
+A collaborative team lunch rostering system with user authentication and multi-team support that uses points-based round-robin scheduling to fairly distribute the responsibility of organizing team lunches, while adding gamification through venue voting and achievements to recognize members who consistently choose great spots.
 
 **Experience Qualities**:
 1. **Fair** - The points system ensures everyone gets an equal turn and no one feels burdened by organizing too often
-2. **Engaging** - Light gamification through voting makes lunch planning fun rather than a chore
-3. **Flexible** - Easy deferrals and holiday handling accommodate real-world scheduling needs
+2. **Social** - Multi-team support and profile system makes it feel like a shared experience across the organization
+3. **Delightful** - Achievements, emojis, colors, and playful interactions make lunch planning genuinely fun
 
 **Complexity Level**: Light Application (multiple features with basic state)
-  - Manages team member rotation, voting, and points tracking with persistent state across sessions
+  - Manages user authentication, multiple teams, member rotation, voting, and points tracking with persistent state across sessions
 
 ## Essential Features
 
+### User Authentication (Magic Link)
+- **Functionality**: Email-based authentication using magic link codes
+- **Purpose**: Identify users across teams and persist their preferences
+- **Trigger**: User visits app without being logged in
+- **Progression**: Enter email → Receive magic link code → Enter code → Authenticated
+- **Success criteria**: User remains logged in across sessions, can access all their teams
+
+### Team Management
+- **Functionality**: Create teams with custom names, emojis, and colors, or join existing teams via invite codes
+- **Purpose**: Support multiple independent lunch groups within an organization
+- **Trigger**: Authenticated user needs to create or join a team
+- **Progression**: Click Create Team → Choose name/emoji/color → Get invite code → Share with teammates OR Click Join Team → Enter invite code → Join existing team
+- **Success criteria**: Users can belong to multiple teams, each team has isolated rosters and voting
+
 ### Team Member Management
-- **Functionality**: Add/remove team members, view current roster
-- **Purpose**: Establish who participates in the lunch rotation
-- **Trigger**: User clicks "Add Member" or manages existing members
-- **Progression**: Click Add Member → Enter name/details → Save → Member appears in roster with 0 points
-- **Success criteria**: Members persist across sessions, display in roster with current point totals
+- **Functionality**: Add/remove team members within a specific team
+- **Purpose**: Establish who participates in each team's lunch rotation
+- **Trigger**: User clicks "Add Member" within a team context
+- **Progression**: Select team → Click Add Member → Enter name → Member appears in roster with average points
+- **Success criteria**: Members are tied to specific teams, display with current point totals and achievements
 
 ### Points-Based Round Robin Scheduling
 - **Functionality**: Automatically determines whose turn it is based on accumulated points (lowest points = next organizer)
@@ -40,12 +54,12 @@ A collaborative team lunch rostering system that uses points-based round-robin s
 - **Progression**: View venue options → Cast vote for preferred venue → See live vote counts → Voting closes → Winner announced
 - **Success criteria**: Each member votes once, votes are tallied accurately, winning venue is clearly displayed
 
-### Organizer Reputation Score
-- **Functionality**: Track "venue quality" score based on votes received for proposed venues
-- **Purpose**: Light gamification - recognize members who consistently pick popular spots
-- **Trigger**: After voting completes, calculate average votes or "wins"
-- **Progression**: Votes tallied → Calculate organizer's venue rating → Update reputation score → Display leaderboard
-- **Success criteria**: Scores reflect voting patterns, leaderboard shows top organizers
+### Organizer Reputation Score & Achievements
+- **Functionality**: Track "venue quality" score based on votes received, award achievement titles based on performance
+- **Purpose**: Gamification - recognize members who consistently pick popular spots with fun titles
+- **Trigger**: After voting completes, calculate reputation and check for achievement milestones
+- **Progression**: Votes tallied → Calculate organizer's venue rating → Update reputation score → Check win count → Award achievement title → Display in leaderboard
+- **Success criteria**: Scores reflect voting patterns, achievement titles appear on member cards (🏆 Legendary Curator, ⭐ Master Chef, etc.)
 
 ### Defer Turn
 - **Functionality**: Allow members to defer their organizing turn to the next period
@@ -63,16 +77,19 @@ A collaborative team lunch rostering system that uses points-based round-robin s
 
 ## Edge Case Handling
 
-- **New member joining mid-rotation** - Start with average points of existing members to avoid immediate heavy rotation
+- **User authentication failure** - Clear error messages, ability to retry or use different email
+- **Invalid invite code** - Show error toast, allow user to retry
+- **User belongs to no teams** - Show team creation/join prompts prominently
+- **New member joining mid-rotation** - Start with average points of existing team members to avoid immediate heavy rotation
 - **Member leaving team** - Remove from rotation, redistribute any active turns to next person
-- **Tied points for next organizer** - Randomly select or use secondary sort (alphabetical, join date)
-- **No votes cast on venues** - Default to organizer's first choice or mark as "No decision"
-- **Organizer forgets to propose venues** - Send reminder, allow auto-skip after deadline
-- **Multiple concurrent lunch periods** - System handles one active lunch period at a time
+- **Tied points for next organizer** - Use secondary sort (alphabetical by name)
+- **No votes cast on venues** - Still allow completion, winner determined by first option
+- **Organizer forgets to propose venues** - Team can start new period manually
+- **Multiple teams with same user** - Data properly isolated per team, no cross-contamination
 
 ## Design Direction
 
-The design should feel collaborative and friendly, like a team dashboard rather than a corporate tool—approachable and lightweight with clear visual indicators of who's up next and gentle encouragement to participate. A minimal interface serves best here, keeping cognitive load low while making the key actions (viewing rotation, voting, proposing venues) immediately obvious.
+The design should feel playful and celebratory, like a shared team activity rather than task management—vibrant team colors and emojis give each group personality, while achievement titles and animated interactions create moments of delight that encourage ongoing participation. A clean interface with personality serves best here, keeping the experience fun while making key actions (creating teams, voting, viewing achievements) immediately obvious and rewarding.
 
 ## Color Selection
 
@@ -103,43 +120,57 @@ Typography should be clean, friendly, and highly legible for scanning rosters an
 
 ## Animations
 
-Animations should feel responsive and encouraging—subtle transitions that guide attention to rotation changes and voting results, with moments of delight when celebrating voting winners or acknowledging completed turns.
+Animations should feel celebratory and encouraging—smooth transitions with personality that highlight achievements and voting results, with playful micro-interactions when creating teams (emoji/color selection), moments of delight when someone earns a new achievement title, and satisfying feedback when votes are cast.
 
-- **Purposeful Meaning**: Motion emphasizes collaboration—smooth transitions when turns change hands, celebratory micro-interactions when venues win votes, gentle pulses on "your turn" indicators
-- **Hierarchy of Movement**: Highest priority animations for turn changes and voting results (300ms), medium for navigation (200ms), subtle for hover states (150ms)
+- **Purposeful Meaning**: Motion emphasizes celebration and accomplishment—smooth transitions when earning achievements, confetti-like effects for voting winners, gentle pulses on "your turn" indicators, bouncy interactions when selecting team emojis
+- **Hierarchy of Movement**: Highest priority for achievement unlocks and voting results (400ms with spring easing), medium for team creation/selection (250ms), subtle for hover states and UI transitions (150ms)
 
 ## Component Selection
 
 - **Components**:
-  - **Card** - Primary container for roster list, venue proposals, voting panels (add subtle shadow and border)
+  - **Card** - Primary container for roster list, venue proposals, voting panels, team selection cards (add subtle shadow and border)
   - **Avatar** - Display team member profile images with fallback to initials
-  - **Button** - Primary actions (Propose Venue, Cast Vote, Add Member), secondary for defer/skip
-  - **Dialog** - Add member form, venue proposal form, defer confirmation
-  - **Badge** - Display point totals, "Up Next" indicator, reputation scores
+  - **Button** - Primary actions (Create Team, Join Team, Propose Venue, Cast Vote, Add Member), secondary for defer/skip
+  - **Dialog** - Magic link verification, team creation, join team, add member form, venue proposal form
+  - **Badge** - Display point totals, "Up Next" indicator, reputation scores, achievement titles, team owner badge
   - **Progress** - Visual indicator for voting progress or point distribution
   - **Tabs** - Switch between "Roster", "Vote", "History" views
   - **Separator** - Divide sections within cards
-  - **Tooltip** - Explain point system, reputation scores on hover
+  - **Tooltip** - Explain point system, reputation scores, achievements on hover
+  - **Switch** - Holiday mode toggle
+  - **Input** - Email entry, code verification, team names, member names
 
 - **Customizations**:
-  - **Roster List Component** - Custom component combining Avatar, member info, points badge, and action buttons
+  - **Team Selection Grid** - Large touch-friendly cards with emoji displays and color-coded backgrounds
+  - **Team Header** - Shows team emoji/color, member count, invite button with copy-to-clipboard
+  - **Roster List Component** - Custom component combining Avatar, member info, achievement titles, points badge, wins counter
   - **Venue Voting Card** - Custom component with venue details, vote button, and live vote count
-  - **Leaderboard Component** - Custom ranked list with reputation scores and sparkle icons for top performers
+  - **Leaderboard Component** - Custom ranked list with reputation scores and achievement icons for top performers
+  - **Login Screen** - Full-page gradient background with centered card, two-step magic link flow
 
 - **States**:
   - Buttons: Default with clear affordance, hover lifts slightly, active shows pressed state, disabled when not member's turn
   - Vote buttons: Unselected (secondary), selected (primary with checkmark), disabled after voting
-  - "Up Next" indicator: Accent color with subtle pulsing animation
+  - "Up Next" indicator: Accent color with pulsing animation
+  - Achievement badges: Appear with subtle scale animation when earned
+  - Team color selectors: Ring on selected color, hover effect on all
+  - Emoji selectors: Accent background on selected, hover scale on all
 
 - **Icon Selection**:
+  - EnvelopeSimple (email/magic link)
+  - Check (verification success)
+  - SignIn (join team)
+  - ShareNetwork (invite)
+  - Copy (copy invite code)
+  - ArrowLeft (back navigation)
   - CalendarBlank (schedule/rotation)
   - Users (team roster)
   - MapPin (venues)
-  - ThumbsUp (voting)
   - Trophy (reputation/leaderboard)
+  - Crown (wins counter)
   - SkipForward (defer turn)
-  - Plus (add member)
-  - X (remove member)
+  - Plus (add member/create)
+  - X (remove member/close)
 
 - **Spacing**: Consistent 4px base unit - cards use p-6, sections gap-4, list items gap-3, inline elements gap-2
 

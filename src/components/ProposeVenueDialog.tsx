@@ -20,9 +20,10 @@ interface ProposeVenueDialogProps {
   onClose: () => void
   onSubmit: (venues: VenueOption[]) => void
   organizerName: string
+  organizerId: string
 }
 
-export function ProposeVenueDialog({ open, onClose, onSubmit, organizerName }: ProposeVenueDialogProps) {
+export function ProposeVenueDialog({ open, onClose, onSubmit, organizerName, organizerId }: ProposeVenueDialogProps) {
   const [venues, setVenues] = useState<Array<{ name: string; description: string }>>([
     { name: '', description: '' },
     { name: '', description: '' },
@@ -55,6 +56,7 @@ export function ProposeVenueDialog({ open, onClose, onSubmit, organizerName }: P
         name: v.name.trim(),
         description: v.description.trim(),
         votes: [],
+        proposedBy: organizerId,
       }))
       onSubmit(venueOptions)
       setVenues([{ name: '', description: '' }, { name: '', description: '' }])
