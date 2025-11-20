@@ -71,7 +71,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
             Team Lunch
           </h1>
           <p className="text-muted-foreground">
-            Fair rotation, great food, happy team
+            Tiny rituals for tiny teams
           </p>
         </div>
 

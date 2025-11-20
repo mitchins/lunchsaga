@@ -1,30 +1,35 @@
 # Planning Guide
 
-A collaborative team lunch rostering system with user authentication and multi-team support that uses points-based round-robin scheduling to fairly distribute the responsibility of organizing team lunches, while adding gamification through venue voting and achievements to recognize members who consistently choose great spots.
+Micro-rituals for micro-teams: A zero-admin webapp for managing weekly team lunch rotations with fair turn-taking, democratic venue voting, and playful recognition for great picks—built for small teams who want ritual without overhead.
 
 **Experience Qualities**:
-1. **Fair** - The points system ensures everyone gets an equal turn and no one feels burdened by organizing too often
-2. **Social** - Multi-team support and profile system makes it feel like a shared experience across the organization
-3. **Delightful** - Achievements, emojis, colors, and playful interactions make lunch planning genuinely fun
+1. **Frictionless** - Magic-link login, instant team creation, no setup friction—add card and you're done
+2. **Ritual-focused** - Simple weekly rhythm with "Up Next" clarity makes participation effortless and expected
+3. **Delightful** - Fun layer with achievements, voting feedback, and celebratory moments without feeling childish
 
 **Complexity Level**: Light Application (multiple features with basic state)
-  - Manages user authentication, multiple teams, member rotation, voting, and points tracking with persistent state across sessions
+  - Manages magic-link authentication, multiple teams per user, automatic rotation logic, venue voting, reputation scoring, and achievement tracking with persistent state
+
+**Product Category**: Micro Rituals for Micro Teams
+  - Universal workplace need (lunch turns, coffee runs, Friday picks, snack duty, weekly MVP, rotating chores)
+  - Small enough that nobody built it properly, universal enough that every team has a broken spreadsheet doing this
+  - Zero admin overhead, high social stickiness through weekly check-ins
 
 ## Essential Features
 
 ### User Authentication (Magic Link)
-- **Functionality**: Email-based authentication using magic link codes
-- **Purpose**: Identify users across teams and persist their preferences
+- **Functionality**: Email-based authentication using magic link codes, no password required
+- **Purpose**: Zero-friction entry ideal for small teams—identify users across teams without login overhead
 - **Trigger**: User visits app without being logged in
 - **Progression**: Enter email → Receive magic link code → Enter code → Authenticated
-- **Success criteria**: User remains logged in across sessions, can access all their teams
+- **Success criteria**: User remains logged in across sessions, can access all their teams, no password memory burden
 
 ### Team Management
-- **Functionality**: Create teams with custom names, emojis, and colors, or join existing teams via invite codes
-- **Purpose**: Support multiple independent lunch groups within an organization
+- **Functionality**: Create teams with custom names, emojis, and colors, or join existing teams via invite codes—supports infinite teams per user
+- **Purpose**: People are in multiple micro-teams (Mobile Team, Design Team, Friday Coffee Club, Housemates, Project sub-squads)
 - **Trigger**: Authenticated user needs to create or join a team
-- **Progression**: Click Create Team → Choose name/emoji/color → Get invite code → Share with teammates OR Click Join Team → Enter invite code → Join existing team
-- **Success criteria**: Users can belong to multiple teams, each team has isolated rosters and voting
+- **Progression**: Click Create Team → Choose name/emoji/color → Get shareable invite code → Share with teammates OR Click Join Team → Enter invite code → Join existing team
+- **Success criteria**: Users can belong to unlimited teams, team switcher makes context switching seamless, each team has isolated rosters and voting
 
 ### Team Member Management
 - **Functionality**: Add/remove team members within a specific team
@@ -47,26 +52,40 @@ A collaborative team lunch rostering system with user authentication and multi-t
 - **Progression**: Organizer designated → Propose 2-3 venue options → Submit for team voting → Voting period opens
 - **Success criteria**: Venues are clearly associated with the organizer who proposed them
 
-### Team Voting on Venues
-- **Functionality**: Team members vote on proposed venue options
-- **Purpose**: Democratic selection and quality feedback for organizers
-- **Trigger**: Team members view active venue proposals
-- **Progression**: View venue options → Cast vote for preferred venue → See live vote counts → Voting closes → Winner announced
-- **Success criteria**: Each member votes once, votes are tallied accurately, winning venue is clearly displayed
+### Team Voting on Venues (with Post-Lunch Feedback)
+- **Functionality**: Team members vote on proposed venue options, then optionally rate the pick after lunch
+- **Purpose**: Democratic selection with quality feedback loop—turns good picks into social recognition
+- **Trigger**: Team members view active venue proposals (pre-lunch), or complete period (post-lunch)
+- **Progression**: View venue options → Cast vote for preferred venue → See live vote counts → Voting closes → Winner announced → After lunch → "Great pick!" ★ or "Pass" reactions → Leaderboards update with average scores
+- **Success criteria**: Each member votes once, votes are tallied accurately, winning venue is clearly displayed, post-lunch feedback influences reputation/leaderboards
 
 ### Organizer Reputation Score & Achievements
-- **Functionality**: Track "venue quality" score based on votes received, award achievement titles based on performance
-- **Purpose**: Gamification - recognize members who consistently pick popular spots with fun titles
-- **Trigger**: After voting completes, calculate reputation and check for achievement milestones
-- **Progression**: Votes tallied → Calculate organizer's venue rating → Update reputation score → Check win count → Award achievement title → Display in leaderboard
-- **Success criteria**: Scores reflect voting patterns, achievement titles appear on member cards (🏆 Legendary Curator, ⭐ Master Chef, etc.)
+- **Functionality**: Track "venue quality" score based on votes received and post-lunch ratings, award fun achievement titles (not corporate badges)
+- **Purpose**: Light gamification - recognize members who consistently pick popular spots with playful titles, not serious performance metrics
+- **Trigger**: After voting completes and post-lunch feedback is gathered
+- **Progression**: Votes tallied → Post-lunch ratings collected → Calculate organizer's average venue rating → Update reputation score → Check win count → Award achievement title ("🏆 Legendary Curator", "⭐ Master Chef") → Display in leaderboard with seasonal stats
+- **Success criteria**: Scores reflect voting patterns + quality feedback, achievement titles appear on member cards, leaderboard shows "Hall of Fame" for best performers, stats reset each season for fresh starts
 
-### Defer Turn
-- **Functionality**: Allow members to defer their organizing turn to the next period
-- **Purpose**: Accommodate vacations, busy weeks, or other conflicts
-- **Trigger**: Member clicks "Skip My Turn" or "Defer"
-- **Progression**: Member up next → Click Defer → Points don't increment → Next-lowest member becomes organizer → Deferred member returns to queue
-- **Success criteria**: Deferrals don't break rotation fairness, member can rejoin rotation later
+### Member Profiles & Attendance
+- **Functionality**: Member cards expand to show attendance toggles, per-member holiday mode, edit name/avatar
+- **Purpose**: Tappable cards make individual management easy—mark someone away without removing them from rotation
+- **Trigger**: Tap/click on member card in roster
+- **Progression**: Tap member → Card expands → Toggle attendance/holiday → Rotation automatically skips them → Toggle back when they return
+- **Success criteria**: Expanded state shows all member controls, attendance toggles immediately affect rotation logic, visual feedback confirms state
+
+### Team Switcher (Multi-Team Navigation)
+- **Functionality**: Slack-style left sidebar or top dropdown for switching between teams
+- **Purpose**: People belong to multiple micro-teams and need effortless context switching
+- **Trigger**: User in any team view wants to switch to different team
+- **Progression**: Click team switcher → View all joined teams → Select team → Context switches to selected team's roster/voting/history
+- **Success criteria**: Switching is instant, current team is visually highlighted, teams show unread activity indicators
+
+### Status Bar (Ritual Context)
+- **Functionality**: Persistent status bar showing current week, next picker, team name, quick profile/team switch
+- **Purpose**: TMUX-like always-visible context for the current ritual state
+- **Trigger**: Always visible at top or bottom of app
+- **Progression**: Glanceable info → Current week number → "Up Next: [Name]" → Active team name → Quick switchers
+- **Success criteria**: Never disappears, updates in real-time, accessible on all screens
 
 ### Holiday/Break Mode
 - **Functionality**: Pause the rotation during company holidays or team breaks
@@ -75,21 +94,54 @@ A collaborative team lunch rostering system with user authentication and multi-t
 - **Progression**: Toggle holiday mode → Rotation pauses → No turns assigned → Resume when break ends
 - **Success criteria**: No points accrue during breaks, rotation resumes cleanly afterward
 
+## Future Enhancements
+_Valuable features marked for post-prototype iterations_
+
+### Slack / Teams Integration
+- Bot notifications: "It's Misun Kim's turn this week!" / "Vote on this week's pick!" / "Leaderboard updated!"
+- This is a big future lever for virality and adoption within orgs
+
+### AI-Powered Suggestions
+- ChatGPT-powered "Pick of the Week" venue suggestions based on past preferences
+- Randomizer wheel for lunch picks
+
+### Extended Ritual Types
+- Adapt the same rotation/voting/achievement system for: coffee runs, Friday picks, snack duty, weekly MVP, rotating chores
+- Each becomes a separate "ritual template" within the app
+
+### Advanced Analytics
+- Team streaks, season comparisons, "bad pick protection mode"
+- Place suggestions based on location and team history
+
+### Social Features
+- "Great pick!" emoji reactions beyond star ratings
+- Optional short comments on venue feedback
+- Team polls for non-lunch decisions
+
 ## Edge Case Handling
 
 - **User authentication failure** - Clear error messages, ability to retry or use different email
-- **Invalid invite code** - Show error toast, allow user to retry
-- **User belongs to no teams** - Show team creation/join prompts prominently
+- **Invalid invite code** - Show error toast, allow user to retry with helpful hint
+- **User belongs to no teams** - Show team creation/join prompts prominently with example use cases
 - **New member joining mid-rotation** - Start with average points of existing team members to avoid immediate heavy rotation
 - **Member leaving team** - Remove from rotation, redistribute any active turns to next person
-- **Tied points for next organizer** - Use secondary sort (alphabetical by name)
-- **No votes cast on venues** - Still allow completion, winner determined by first option
-- **Organizer forgets to propose venues** - Team can start new period manually
-- **Multiple teams with same user** - Data properly isolated per team, no cross-contamination
+- **Member on holiday/away** - Attendance toggle skips them in rotation without removing from team
+- **Tied points for next organizer** - Use secondary sort (alphabetical by name) for consistent fairness
+- **No votes cast on venues** - Still allow completion, winner determined by first option or organizer's choice
+- **Organizer forgets to propose venues** - Team can manually start new period or skip to next organizer
+- **Multiple teams with same user** - Data properly isolated per team, no cross-contamination, clear team context in UI
+- **Team switcher confusion** - Always show current team name prominently, highlight active team in switcher
+- **Stale rotation state** - "Force-start week" button for manual override when automation gets stuck
 
 ## Design Direction
 
-The design should feel playful and celebratory, like a shared team activity rather than task management—vibrant team colors and emojis give each group personality, while achievement titles and animated interactions create moments of delight that encourage ongoing participation. A clean interface with personality serves best here, keeping the experience fun while making key actions (creating teams, voting, viewing achievements) immediately obvious and rewarding.
+The design should feel like a "Lunch Club for Tiny Teams"—playful without being childish, ritual-focused without feeling corporate. Think: minimal overhead UI that gets out of the way, but celebrates participation with vibrant team colors, fun achievement titles, and satisfying micro-interactions. The experience should feel social and human, emphasizing weekly rhythm and shared moments over productivity metrics. Visual personality comes from team emojis and colors, not busy interfaces.
+
+**Tagline Options**:
+- "Tiny Rituals for Tiny Teams"
+- "Weekly picks without the drama"
+- "Your team's lunch rotation, automated"
+- "Micro-rituals that keep teams human"
 
 ## Color Selection
 
@@ -120,33 +172,40 @@ Typography should be clean, friendly, and highly legible for scanning rosters an
 
 ## Animations
 
-Animations should feel celebratory and encouraging—smooth transitions with personality that highlight achievements and voting results, with playful micro-interactions when creating teams (emoji/color selection), moments of delight when someone earns a new achievement title, and satisfying feedback when votes are cast.
+Animations should feel celebratory and encouraging—moments of delight that reinforce participation without slowing down usage. Think: satisfying feedback when votes are cast, playful bounces when creating teams, gentle recognition when someone earns an achievement. Keep motion subtle and purposeful, never blocking or distracting from the core ritual flow.
 
-- **Purposeful Meaning**: Motion emphasizes celebration and accomplishment—smooth transitions when earning achievements, confetti-like effects for voting winners, gentle pulses on "your turn" indicators, bouncy interactions when selecting team emojis
-- **Hierarchy of Movement**: Highest priority for achievement unlocks and voting results (400ms with spring easing), medium for team creation/selection (250ms), subtle for hover states and UI transitions (150ms)
+- **Purposeful Meaning**: Motion celebrates participation and accomplishment—confetti-like effects for voting winners (small, tasteful), gentle pulsing on "Up Next" indicators, smooth spring physics when selecting team emojis/colors, scale animation when achievements unlock
+- **Hierarchy of Movement**: 
+  - High priority (400ms spring): Achievement unlocks, voting completion, winner announcement
+  - Medium priority (250ms): Team creation, team switching, venue card interactions
+  - Subtle (150ms): Hover states, button presses, UI transitions
+  - Always smooth: Never jarring or mechanical—prefer spring/ease-out over linear
 
 ## Component Selection
 
 - **Components**:
-  - **Card** - Primary container for roster list, venue proposals, voting panels, team selection cards (add subtle shadow and border)
-  - **Avatar** - Display team member profile images with fallback to initials
-  - **Button** - Primary actions (Create Team, Join Team, Propose Venue, Cast Vote, Add Member), secondary for defer/skip
+  - **Card** - Primary container for roster list, venue proposals, voting panels, team selection cards (add subtle shadow, use border for state indication)
+  - **Avatar** - Display team member profile images with fallback to initials (2-letter, colorful backgrounds)
+  - **Button** - Primary actions (Create Team, Join Team, Propose Venue, Cast Vote, Add Member), secondary for defer/skip, "Force-start week" for manual override
   - **Dialog** - Magic link verification, team creation, join team, add member form, venue proposal form
-  - **Badge** - Display point totals, "Up Next" indicator, reputation scores, achievement titles, team owner badge
-  - **Progress** - Visual indicator for voting progress or point distribution
-  - **Tabs** - Switch between "Roster", "Vote", "History" views
+  - **Badge** - Display point totals, "Up Next" indicator with pulse animation, reputation scores, achievement titles, team owner badge
+  - **Progress** - Visual indicator for voting progress (how many votes cast vs total members)
+  - **Tabs** - Switch between "Roster", "Vote", "History" views within a team
   - **Separator** - Divide sections within cards
   - **Tooltip** - Explain point system, reputation scores, achievements on hover
-  - **Switch** - Holiday mode toggle
-  - **Input** - Email entry, code verification, team names, member names
+  - **Switch** - Holiday mode toggle (per team)
+  - **Input** - Email entry, code verification, team names, member names, venue details
 
 - **Customizations**:
-  - **Team Selection Grid** - Large touch-friendly cards with emoji displays and color-coded backgrounds
-  - **Team Header** - Shows team emoji/color, member count, invite button with copy-to-clipboard
-  - **Roster List Component** - Custom component combining Avatar, member info, achievement titles, points badge, wins counter
-  - **Venue Voting Card** - Custom component with venue details, vote button, and live vote count
-  - **Leaderboard Component** - Custom ranked list with reputation scores and achievement icons for top performers
-  - **Login Screen** - Full-page gradient background with centered card, two-step magic link flow
+  - **Team Switcher Component** - Slack-style sidebar or top dropdown with team emoji, color indicator, unread activity dots
+  - **Status Bar Component** - Persistent bar (top or bottom) showing current week, "Up Next: [Name]", active team, quick switchers
+  - **Team Selection Grid** - Large touch-friendly cards with emoji displays and color-coded backgrounds, hover effects
+  - **Team Header** - Shows team emoji/color, member count, invite button with one-click copy-to-clipboard
+  - **Expandable Member Card** - Tap to expand: shows attendance toggle, holiday mode per member, edit controls
+  - **Roster List Component** - Combines Avatar, member info, achievement titles, points badge, wins counter, reputation score
+  - **Venue Voting Card** - Custom component with venue details, vote button, live vote count, post-lunch rating option (★/Pass)
+  - **Leaderboard Component** - Ranked list with reputation scores, achievement icons, seasonal stats, "Hall of Fame" section for top performers
+  - **Login Screen** - Full-page gradient background with centered card, two-step magic link flow, friendly copy
 
 - **States**:
   - Buttons: Default with clear affordance, hover lifts slightly, active shows pressed state, disabled when not member's turn

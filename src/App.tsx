@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { LoginScreen } from '@/components/LoginScreen'
 import { TeamSelection } from '@/components/TeamSelection'
+import { StatusBar } from '@/components/StatusBar'
 import { TeamHeader } from '@/components/TeamHeader'
 import { MemberCard } from '@/components/MemberCard'
 import { AddMemberDialog } from '@/components/AddMemberDialog'
@@ -30,6 +31,7 @@ function App() {
   const [allPeriods, setAllPeriods] = useKV<LunchPeriod[]>('lunch-all-periods', [])
   const [allHistory, setAllHistory] = useKV<LunchPeriod[]>('lunch-all-history', [])
   const [holidayModes, setHolidayModes] = useKV<Record<string, boolean>>('lunch-holiday-modes', {})
+  const [awayMembers, setAwayMembers] = useKV<Record<string, boolean>>('lunch-away-members', {})
   const [proposeDialogOpen, setProposeDialogOpen] = useState(false)
   const { triggerConfetti } = useConfetti()
 
@@ -39,17 +41,21 @@ function App() {
   const safeAllPeriods = allPeriods || []
   const safeAllHistory = allHistory || []
   const safeHolidayModes = holidayModes || {}
+  const safeAwayMembers = awayMembers || {}
 
   const selectedTeam = selectedTeamId ? safeTeams.find(t => t.id === selectedTeamId) : null
   const members = selectedTeamId ? safeAllMembers.filter(m => m.teamId === selectedTeamId) : []
+  const activeMembers = members.filter(m => !safeAwayMembers[m.id])
   const currentPeriod = selectedTeamId ? safeAllPeriods.find(p => p.teamId === selectedTeamId && p.status !== 'completed') : null
   const history = selectedTeamId ? safeAllHistory.filter(h => h.teamId === selectedTeamId) : []
   const isHolidayMode = selectedTeamId ? safeHolidayModes[selectedTeamId] || false : false
 
-  const nextOrganizer = getNextOrganizer(members)
+  const nextOrganizer = getNextOrganizer(activeMembers)
   const averagePoints = members.length > 0
     ? Math.round(members.reduce((sum, m) => sum + m.points, 0) / members.length)
     : 0
+
+  const currentWeek = Math.ceil((Date.now() - (selectedTeam?.createdAt || Date.now())) / (7 * 24 * 60 * 60 * 1000))
 
   const handleLogin = (newUser: User) => {
     setUser(newUser)
@@ -261,6 +267,18 @@ function App() {
     toast.success(checked ? '🏖️ Holiday mode enabled' : 'Holiday mode disabled')
   }
 
+  const handleToggleMemberAway = (memberId: string, isAway: boolean) => {
+    setAwayMembers((current) => ({ ...(current || {}), [memberId]: isAway }))
+    const member = members.find(m => m.id === memberId)
+    if (member) {
+      toast.success(isAway ? `${member.name} marked as away` : `${member.name} is back!`)
+    }
+  }
+
+  const handleTeamSwitch = (teamId: string) => {
+    setSelectedTeamId(teamId)
+  }
+
   if (!safeUser) {
     return <LoginScreen onLogin={handleLogin} />
   }
@@ -283,6 +301,16 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
+      {safeTeams.length > 1 && (
+        <StatusBar
+          currentTeam={selectedTeam}
+          allTeams={safeTeams}
+          nextOrganizer={nextOrganizer}
+          currentWeek={currentWeek}
+          onTeamSwitch={handleTeamSwitch}
+        />
+      )}
+
       <div className="max-w-6xl mx-auto px-4 py-8">
         <TeamHeader 
           team={selectedTeam} 
@@ -313,6 +341,11 @@ function App() {
               </Button>
             </div>
           )}
+          {currentPeriod && userHasVoted && totalVotes === activeMembers.length && (
+            <Button onClick={handleCompletePeriod} size="sm" variant="default">
+              Complete Voting
+            </Button>
+          )}
         </div>
 
         <Tabs defaultValue="roster" className="space-y-6">
@@ -333,9 +366,14 @@ function App() {
 
           <TabsContent value="roster" className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold" style={{ letterSpacing: '-0.01em' }}>
-                Team Members
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-semibold" style={{ letterSpacing: '-0.01em' }}>
+                  Team Members
+                </h2>
+                <Badge variant="outline" className="text-xs">
+                  Sorted by turns taken
+                </Badge>
+              </div>
               <AddMemberDialog onAdd={handleAddMember} averagePoints={averagePoints} />
             </div>
 
@@ -344,7 +382,7 @@ function App() {
                 <Users size={48} className="mx-auto mb-4 text-muted-foreground" />
                 <h3 className="font-medium mb-2">No team members yet</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Add your first team member to start the lunch rotation
+                  Add your teammates to start the fair rotation for weekly lunch picks
                 </p>
                 <AddMemberDialog onAdd={handleAddMember} averagePoints={averagePoints} />
               </Card>
@@ -359,6 +397,7 @@ function App() {
                         member={member}
                         isNextOrganizer={member.id === nextOrganizer?.id}
                         onRemove={handleRemoveMember}
+                        onToggleAway={handleToggleMemberAway}
                       />
                     ))}
                 </div>
@@ -379,8 +418,8 @@ function App() {
                   {isHolidayMode
                     ? 'Holiday mode is active. Disable it to start a new lunch period.'
                     : nextOrganizer
-                    ? `${nextOrganizer.name} is up next. Start the week to begin voting.`
-                    : 'Add team members to start organizing lunches.'}
+                    ? `${nextOrganizer.name} is up next! Start the week to begin venue selection and voting.`
+                    : 'Add team members to start organizing weekly lunch rotations.'}
                 </p>
                 {nextOrganizer && !isHolidayMode && (
                   <Button onClick={handleStartPeriod}>Start This Week</Button>
@@ -397,17 +436,13 @@ function App() {
                       Organized by {members.find(m => m.id === currentPeriod.organizerId)?.name}
                     </p>
                   </div>
-                  {userHasVoted && (
-                    <Button onClick={handleCompletePeriod} variant="outline">
-                      Complete Voting
-                    </Button>
-                  )}
                 </div>
 
                 {totalVotes > 0 && (
                   <Card className="p-4 bg-primary/5 border-primary/20">
                     <p className="text-sm">
-                      <span className="font-medium">{totalVotes}</span> {totalVotes === 1 ? 'vote' : 'votes'} cast so far
+                      <span className="font-medium">{totalVotes}</span> of <span className="font-medium">{activeMembers.length}</span> {activeMembers.length === 1 ? 'vote' : 'votes'} cast
+                      {totalVotes === activeMembers.length && ' - All votes in! ✨'}
                     </p>
                   </Card>
                 )}
