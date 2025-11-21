@@ -22,8 +22,8 @@ export function WeeklySummaryScreen({ history, members, onBack }: WeeklySummaryS
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <ScreenHeader
-          title="Weekly Summary"
-          subtitle="Review past lunch selections and outcomes"
+          title="The Chronicles"
+          subtitle="Review past quests and legendary feasts"
           onBack={onBack}
         />
 

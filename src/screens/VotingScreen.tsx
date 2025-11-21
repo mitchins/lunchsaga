@@ -67,8 +67,8 @@ export function VotingScreen({
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <ScreenHeader
-          title="Vote for This Week's Venue"
-          subtitle={`Organized by ${organizer?.name || 'Unknown'}`}
+          title="Cast Your Vote"
+          subtitle={`Quest organized by ${organizer?.name || 'Unknown'}`}
           onBack={onBack}
         />
 

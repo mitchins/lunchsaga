@@ -51,7 +51,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           createdAt: Date.now(),
         }
         onLogin(user)
-        toast.success('Welcome to Team Lunch! 🎉')
+        toast.success('Welcome to the saga! 🎉')
       } else {
         toast.error('Invalid code. Please try again.')
         setCode('')
