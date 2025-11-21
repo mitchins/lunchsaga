@@ -35,16 +35,16 @@ export function VotingScreen({
           <ScreenHeader title="Voting" subtitle="Cast your vote for this week's lunch" onBack={onBack} />
           <EmptyState
             icon={<CalendarBlank size={48} />}
-            title="No active voting"
+            title="The Chapter Awaits"
             description={
               isHolidayMode
-                ? 'Holiday mode is active. Disable it to start a new lunch period.'
-                : 'Start a new week to begin venue selection and voting.'
+                ? "Your saga is paused. Disable holiday mode to continue your culinary journey."
+                : "A new chapter begins when you start this week's quest."
             }
             action={
               !isHolidayMode
                 ? {
-                    label: 'Start This Week',
+                    label: 'Begin This Chapter',
                     onClick: onStartWeek,
                   }
                 : undefined
@@ -67,8 +67,8 @@ export function VotingScreen({
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <ScreenHeader
-          title="Vote for This Week's Venue"
-          subtitle={`Organized by ${organizer?.name || 'Unknown'}`}
+          title="Cast Your Vote"
+          subtitle={`Quest organized by ${organizer?.name || 'Unknown'}`}
           onBack={onBack}
         />
 

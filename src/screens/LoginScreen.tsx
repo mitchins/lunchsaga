@@ -8,6 +8,7 @@ import { User } from '@/lib/types'
 import { generateId } from '@/lib/helpers'
 import { EnvelopeSimple, Check } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { SagaBrand } from '@/components/SagaBrand'
 
 interface LoginScreenProps {
   onLogin: (user: User) => void
@@ -50,7 +51,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           createdAt: Date.now(),
         }
         onLogin(user)
-        toast.success('Welcome to Team Lunch! 🎉')
+        toast.success('Welcome to the saga! 🎉')
       } else {
         toast.error('Invalid code. Please try again.')
         setCode('')
@@ -63,27 +64,19 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-saga-gold-muted via-background to-saga-navy/5 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <div className="text-6xl mb-4">🍽️</div>
-          <h1 className="text-4xl font-semibold tracking-tight" style={{ letterSpacing: '-0.02em' }}>
-            Team Lunch
-          </h1>
-          <p className="text-muted-foreground">
-            Tiny rituals for tiny teams
-          </p>
-        </div>
+        <SagaBrand size="lg" />
 
-        <Card>
+        <Card className="border-saga-gold/20 shadow-lg">
           <CardHeader>
             <CardTitle>
-              {step === 'email' ? 'Sign in with Magic Link' : 'Enter Your Code'}
+              {step === 'email' ? 'Begin Your Saga' : 'Enter Your Code'}
             </CardTitle>
             <CardDescription>
               {step === 'email' 
                 ? 'Enter your email to receive a magic link'
-                : `We sent a code to ${email}`}
+                : `A code has been sent to ${email}`}
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -22,16 +22,16 @@ export function WeeklySummaryScreen({ history, members, onBack }: WeeklySummaryS
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <ScreenHeader
-          title="Weekly Summary"
-          subtitle="Review past lunch selections and outcomes"
+          title="The Chronicles"
+          subtitle="Review past quests and legendary feasts"
           onBack={onBack}
         />
 
         {history.length === 0 ? (
           <EmptyState
             icon={<Clock size={48} />}
-            title="No history yet"
-            description="Complete your first week to see past lunches here"
+            title="The Chronicles Are Empty"
+            description="Your saga's history will appear here once you complete your first chapter"
           />
         ) : (
           <div className="space-y-4">

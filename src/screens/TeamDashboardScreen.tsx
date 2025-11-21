@@ -73,7 +73,7 @@ export function TeamDashboardScreen({
           {nextOrganizer && !isHolidayMode && (
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground">
-                Next: <span className="font-medium text-foreground">{nextOrganizer.name}</span>
+                Next in the Saga: <span className="font-medium text-foreground">{nextOrganizer.name}</span>
               </span>
             </div>
           )}
@@ -111,8 +111,8 @@ export function TeamDashboardScreen({
             {members.length === 0 ? (
               <EmptyState
                 icon={<Users size={48} />}
-                title="No team members yet"
-                description="Add your teammates to start the fair rotation for weekly lunch picks"
+                title="Your Fellowship Awaits"
+                description="Assemble your team to begin the saga of legendary lunch adventures"
               />
             ) : (
               <>

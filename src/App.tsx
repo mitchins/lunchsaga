@@ -50,14 +50,14 @@ function AppRouter() {
   const handleCreateTeam = (team: Team) => {
     setTeams((prevTeams) => [...prevTeams, team])
     setSelectedTeamId(team.id)
-    toast.success(`${team.emoji} ${team.name} created!`)
+    toast.success(`${team.emoji} Fellowship ${team.name} has been forged!`)
     navigate('/dashboard')
   }
 
   const handleJoinTeam = (inviteCode: string) => {
     const team = teams.find((t) => t.inviteCode === inviteCode)
     if (team) {
-      toast.success(`Joined ${team.emoji} ${team.name}!`)
+      toast.success(`You have joined the ${team.emoji} ${team.name} fellowship!`)
       setSelectedTeamId(team.id)
       navigate('/dashboard')
     } else {
@@ -74,37 +74,37 @@ function AppRouter() {
   }
 
   const handleAddMember = (name: string) => {
-    toast.success(`${name} added to the roster`)
+    toast.success(`${name} joins the fellowship`)
   }
 
   const handleRemoveMember = (id: string) => {
-    toast.success('Member removed from roster')
+    toast.success('Member has departed the fellowship')
   }
 
   const handleToggleHoliday = (checked: boolean) => {
     setIsHolidayMode(checked)
-    toast.success(checked ? '🏖️ Holiday mode enabled' : 'Holiday mode disabled')
+    toast.success(checked ? '🏖️ The saga pauses for rest' : 'The saga continues!')
   }
 
   const handleToggleMemberAway = (memberId: string, isAway: boolean) => {
     const member = members.find((m) => m.id === memberId)
     if (member) {
-      toast.success(isAway ? `${member.name} marked as away` : `${member.name} is back!`)
+      toast.success(isAway ? `${member.name} embarks on a journey` : `${member.name} returns to the fellowship!`)
     }
   }
 
   const handleVote = (venueId: string) => {
     if (!currentPeriod) return
-    toast.success('Vote recorded! ✨')
+    toast.success('Your vote has been cast! ✨')
   }
 
   const handleCompletePeriod = () => {
-    toast.success('🎉 Voting completed!')
+    toast.success('🎉 The chapter concludes!')
     navigate('/summary')
   }
 
   const handleStartWeek = () => {
-    toast.success('Week started!')
+    toast.success('A new chapter begins!')
     navigate('/vote')
   }
 

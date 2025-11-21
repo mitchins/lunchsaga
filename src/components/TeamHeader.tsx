@@ -33,8 +33,11 @@ export function TeamHeader({ team, user, memberCount, onBack }: TeamHeaderProps)
           </Button>
           
           <div 
-            className="text-3xl w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: `${team.color}15` }}
+            className="text-3xl w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 border-2"
+            style={{ 
+              backgroundColor: `${team.color}15`,
+              borderColor: `${team.color}40`
+            }}
           >
             {team.emoji}
           </div>
@@ -43,11 +46,11 @@ export function TeamHeader({ team, user, memberCount, onBack }: TeamHeaderProps)
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-xl font-semibold">{team.name}</h2>
               {team.ownerId === user.id && (
-                <Badge variant="secondary">Owner</Badge>
+                <Badge variant="secondary">Guild Master</Badge>
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              {memberCount} {memberCount === 1 ? 'member' : 'members'}
+              {memberCount} {memberCount === 1 ? 'member' : 'members'} in the fellowship
             </p>
           </div>
 
