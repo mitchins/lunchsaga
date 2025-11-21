@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { quickLogin } from './helpers';
+import { quickLogin, navigateAndWait } from './helpers';
 
 /**
  * Settings / Holiday Mode Tests
@@ -13,8 +13,7 @@ test.describe('Settings & Holiday Mode', () => {
   });
 
   test('settings screen loads when navigated to', async ({ page }) => {
-    await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/settings');
     
     // Verify URL
     expect(page.url()).toContain('/settings');
@@ -25,8 +24,7 @@ test.describe('Settings & Holiday Mode', () => {
   });
 
   test('holiday mode toggle switch renders', async ({ page }) => {
-    await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/settings');
     
     // Look for holiday mode switch
     const holidaySwitch = page.getByRole('switch', { name: /holiday/i }).or(
@@ -37,8 +35,7 @@ test.describe('Settings & Holiday Mode', () => {
   });
 
   test('holiday mode toggle can be interacted with', async ({ page }) => {
-    await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/settings');
     
     // Find holiday switch
     const holidaySwitch = page.getByRole('switch', { name: /holiday/i }).or(
@@ -67,8 +64,7 @@ test.describe('Settings & Holiday Mode', () => {
 
   test('holiday mode banner appears on dashboard when enabled', async ({ page }) => {
     // First, enable holiday mode from settings or dashboard
-    await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/dashboard');
     
     // Find holiday toggle on dashboard
     const holidaySwitch = page.getByRole('switch', { name: /holiday/i }).or(
@@ -97,8 +93,7 @@ test.describe('Settings & Holiday Mode', () => {
   });
 
   test('settings screen shows team information', async ({ page }) => {
-    await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/settings');
     
     // Look for team name or emoji
     const teamInfo = page.locator('text=/🎯|🍕|⚡|Team/i');
@@ -108,8 +103,7 @@ test.describe('Settings & Holiday Mode', () => {
   });
 
   test('back navigation works from settings', async ({ page }) => {
-    await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/settings');
     
     const backButton = page.getByRole('button', { name: /back|return|←/i });
     
@@ -123,8 +117,7 @@ test.describe('Settings & Holiday Mode', () => {
   });
 
   test('holiday mode persists across navigation', async ({ page }) => {
-    await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/dashboard');
     
     // Enable holiday mode
     const holidaySwitch = page.getByRole('switch', { name: /holiday/i });
@@ -140,8 +133,7 @@ test.describe('Settings & Holiday Mode', () => {
       // Navigate to another page and back
       await page.goto('/vote');
       await page.waitForTimeout(500);
-      await page.goto('/dashboard');
-      await page.waitForLoadState('networkidle');
+      await navigateAndWait(page, '/dashboard');
       
       // Holiday mode should still be active
       const stillChecked = await holidaySwitch.getAttribute('aria-checked') === 'true';

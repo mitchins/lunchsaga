@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { quickLogin } from './helpers';
+import { quickLogin, navigateAndWait } from './helpers';
 
 /**
  * Weekly Summary Screen Tests
@@ -13,8 +13,7 @@ test.describe('Weekly Summary Screen', () => {
   });
 
   test('weekly summary screen loads', async ({ page }) => {
-    await page.goto('/summary');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/summary');
     
     // Verify URL
     expect(page.url()).toContain('/summary');
@@ -25,8 +24,7 @@ test.describe('Weekly Summary Screen', () => {
   });
 
   test('mock summary data displays', async ({ page }) => {
-    await page.goto('/summary');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/summary');
     
     // Look for any content that indicates data loaded
     const content = page.locator('article, [class*="card"], li, tr');
@@ -37,8 +35,7 @@ test.describe('Weekly Summary Screen', () => {
   });
 
   test('key stats render - turns count', async ({ page }) => {
-    await page.goto('/summary');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/summary');
     
     // Look for "turns", "weeks", or similar
     const turnsText = page.getByText(/turns|weeks|rounds|total/i);
@@ -52,8 +49,7 @@ test.describe('Weekly Summary Screen', () => {
   });
 
   test('key stats render - win counts or picks', async ({ page }) => {
-    await page.goto('/summary');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/summary');
     
     // Look for win/pick related text
     const statsText = page.getByText(/wins|picks|votes|organizer/i);
@@ -63,8 +59,7 @@ test.describe('Weekly Summary Screen', () => {
   });
 
   test('summary shows historical entries', async ({ page }) => {
-    await page.goto('/summary');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/summary');
     
     // Look for list of past events
     const entries = page.locator('li, article, [class*="entry"], tr').filter({
@@ -78,8 +73,7 @@ test.describe('Weekly Summary Screen', () => {
   });
 
   test('summary displays member names', async ({ page }) => {
-    await page.goto('/summary');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/summary');
     
     // Look for names (capitalized words)
     const names = page.locator('text=/[A-Z][a-z]{2,}/');
@@ -90,8 +84,7 @@ test.describe('Weekly Summary Screen', () => {
   });
 
   test('back navigation works from summary', async ({ page }) => {
-    await page.goto('/summary');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/summary');
     
     const backButton = page.getByRole('button', { name: /back|return|←/i });
     
@@ -105,8 +98,7 @@ test.describe('Weekly Summary Screen', () => {
   });
 
   test('summary handles empty state', async ({ page }) => {
-    await page.goto('/summary');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/summary');
     
     // Look for either data or empty state message
     const emptyState = page.getByText(/no.*history|empty|start|first/i);

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { quickLogin } from './helpers';
+import { quickLogin, navigateAndWait } from './helpers';
 
 /**
  * Profile & Badges Tests
@@ -14,8 +14,7 @@ test.describe('Profile & Badges', () => {
 
   test('profile screen loads when navigated to', async ({ page }) => {
     // Navigate to leaderboard first
-    await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/leaderboard');
     
     // Click on a member to view profile
     const memberEntry = page.locator('[role="button"]').or(
@@ -34,8 +33,7 @@ test.describe('Profile & Badges', () => {
       expect(isProfilePage).toBeTruthy();
     } else {
       // Try direct navigation to a profile
-      await page.goto('/profile/mock-member-1');
-      await page.waitForLoadState('networkidle');
+      await navigateAndWait(page, '/profile/mock-member-1');
       
       // Verify we're somewhere valid
       expect(page.url()).toBeTruthy();
@@ -44,8 +42,7 @@ test.describe('Profile & Badges', () => {
 
   test('profile displays member information', async ({ page }) => {
     // Try to navigate via leaderboard or direct
-    await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/leaderboard');
     
     const memberEntry = page.locator('[role="button"]').first();
     if (await memberEntry.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -69,8 +66,7 @@ test.describe('Profile & Badges', () => {
   });
 
   test('badge list renders on profile', async ({ page }) => {
-    await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/leaderboard');
     
     const memberEntry = page.locator('[role="button"]').first();
     if (await memberEntry.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -95,8 +91,7 @@ test.describe('Profile & Badges', () => {
   });
 
   test('badge tooltip or label appears on interaction', async ({ page }) => {
-    await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/leaderboard');
     
     const memberEntry = page.locator('[role="button"]').first();
     if (await memberEntry.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -132,8 +127,7 @@ test.describe('Profile & Badges', () => {
   });
 
   test('profile shows stats or metrics', async ({ page }) => {
-    await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/leaderboard');
     
     const memberEntry = page.locator('[role="button"]').first();
     if (await memberEntry.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -156,8 +150,7 @@ test.describe('Profile & Badges', () => {
   });
 
   test('back navigation works from profile', async ({ page }) => {
-    await page.goto('/profile/mock-member-1');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/profile/mock-member-1');
     
     const backButton = page.getByRole('button', { name: /back|return|←/i });
     

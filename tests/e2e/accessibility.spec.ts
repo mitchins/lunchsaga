@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { quickLogin } from './helpers';
+import { quickLogin, navigateAndWait } from './helpers';
 
 /**
  * Accessibility Tests
@@ -35,8 +35,7 @@ test.describe('Accessibility', () => {
   });
 
   test('dashboard has no critical accessibility violations', async ({ page }) => {
-    await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/dashboard');
     
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
@@ -56,8 +55,7 @@ test.describe('Accessibility', () => {
   });
 
   test('voting screen has no critical accessibility violations', async ({ page }) => {
-    await page.goto('/vote');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/vote');
     
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
@@ -77,8 +75,7 @@ test.describe('Accessibility', () => {
   });
 
   test('buttons have accessible names', async ({ page }) => {
-    await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/dashboard');
     
     // Get all buttons
     const buttons = page.getByRole('button');
@@ -120,8 +117,7 @@ test.describe('Accessibility', () => {
   test.skip('main navigation elements use semantic HTML', async ({ page }) => {
     // This test is skipped for now as the app uses modern React patterns with ARIA roles
     // rather than traditional semantic HTML5 elements
-    await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/dashboard');
     
     // Check for semantic landmarks
     const main = page.locator('main');
@@ -144,8 +140,7 @@ test.describe('Accessibility', () => {
   });
 
   test('interactive elements are keyboard accessible', async ({ page }) => {
-    await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/dashboard');
     
     // Try to tab through the page
     await page.keyboard.press('Tab');
@@ -159,8 +154,7 @@ test.describe('Accessibility', () => {
   });
 
   test('switch controls have proper ARIA roles', async ({ page }) => {
-    await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/dashboard');
     
     // Look for switch elements (holiday mode toggle)
     const switches = page.getByRole('switch');
@@ -177,8 +171,7 @@ test.describe('Accessibility', () => {
   });
 
   test('leaderboard has proper heading hierarchy', async ({ page }) => {
-    await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/leaderboard');
     
     // Check for headings
     const h1 = page.locator('h1');

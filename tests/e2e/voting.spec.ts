@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { quickLogin } from './helpers';
+import { quickLogin, navigateAndWait } from './helpers';
 
 /**
  * Voting Flow Tests
@@ -15,8 +15,7 @@ test.describe('Voting Flow', () => {
 
   test('vote screen renders when navigated to', async ({ page }) => {
     // Navigate to vote screen
-    await page.goto('/vote');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/vote');
     
     // Check if we're on the vote screen
     expect(page.url()).toContain('/vote');
@@ -27,8 +26,7 @@ test.describe('Voting Flow', () => {
   });
 
   test('vote screen shows venue options or member info', async ({ page }) => {
-    await page.goto('/vote');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/vote');
     
     // Look for venue options, member cards, or voting buttons
     // The screen might show different states based on period status
@@ -52,8 +50,7 @@ test.describe('Voting Flow', () => {
   });
 
   test('clicking vote buttons updates UI state', async ({ page }) => {
-    await page.goto('/vote');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/vote');
     
     // Start the week if needed
     const startButton = page.getByRole('button', { name: /start|begin|chapter/i }).first();
@@ -90,8 +87,7 @@ test.describe('Voting Flow', () => {
   });
 
   test('back navigation works from vote screen', async ({ page }) => {
-    await page.goto('/vote');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/vote');
     
     // Look for back button
     const backButton = page.getByRole('button', { name: /back|return|←/i }).or(
@@ -120,8 +116,7 @@ test.describe('Voting Flow', () => {
   });
 
   test('vote screen handles empty/holiday state', async ({ page }) => {
-    await page.goto('/vote');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/vote');
     
     // Check for empty state message or start button
     const emptyStateText = page.getByText(/awaits|paused|holiday|begin/i);
