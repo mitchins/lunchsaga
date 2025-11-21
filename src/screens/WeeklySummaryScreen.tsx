@@ -31,7 +31,7 @@ export function WeeklySummaryScreen({ history, members, onBack }: WeeklySummaryS
           <EmptyState
             icon={<Clock size={48} />}
             title="The Chronicles Are Empty"
-            description="Your saga\'s history will appear here once you complete your first chapter"
+            description="Your saga's history will appear here once you complete your first chapter"
           />
         ) : (
           <div className="space-y-4">

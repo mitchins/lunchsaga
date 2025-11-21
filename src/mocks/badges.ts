@@ -82,7 +82,7 @@ export const mockBadges: Badge[] = [
     id: 'badge-9',
     name: 'Protector of the Usual',
     description: 'Voted for the same venue 3 times',
-    icon: '🛡️',
+    icon: '⚔️',
     rarity: 'common',
     criteria: 'Show loyalty to a favorite spot',
   },

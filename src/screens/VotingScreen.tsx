@@ -38,8 +38,8 @@ export function VotingScreen({
             title="The Chapter Awaits"
             description={
               isHolidayMode
-                ? 'Your saga is paused. Disable holiday mode to continue your culinary journey.'
-                : 'A new chapter begins when you start this week\'s quest.'
+                ? "Your saga is paused. Disable holiday mode to continue your culinary journey."
+                : "A new chapter begins when you start this week's quest."
             }
             action={
               !isHolidayMode
