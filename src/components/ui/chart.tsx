@@ -76,19 +76,74 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
+  // Sanitize CSS identifier to prevent injection
+  const sanitizeCSSIdentifier = (str: string): string => {
+    return str.replaceAll(/[^a-zA-Z0-9_-]/g, '')
+  }
+
+  // Whitelist of valid CSS color keywords
+  const VALID_COLOR_NAMES = new Set([
+    'black', 'white', 'red', 'green', 'blue', 'yellow', 'cyan', 'magenta',
+    'gray', 'grey', 'orange', 'purple', 'pink', 'brown', 'transparent',
+    'currentcolor', 'inherit', 'initial', 'unset'
+  ])
+
+  // Sanitize CSS color value to prevent injection
+  const sanitizeCSSColor = (color: string): string => {
+    // Trim whitespace
+    const trimmed = color.trim().toLowerCase()
+    
+    // Allow CSS custom properties (var)
+    if (/^var\(--[\w-]+\)$/.test(trimmed)) {
+      return color
+    }
+    
+    // Check for hex colors
+    if (/^#[\da-f]{3,8}$/.test(trimmed)) {
+      return color
+    }
+    
+    // Check for color functions with var() support
+    // rgb/rgba: rgb(255, 0, 0) or rgb(var(--color))
+    if (/^rgba?\((?:[\d\s,.]+|var\(--[\w-]+\))\)$/.test(trimmed)) {
+      return color
+    }
+    
+    // hsl/hsla: hsl(120, 100%, 50%) or hsl(var(--color))
+    if (/^hsla?\((?:[\d\s,.%]+|var\(--[\w-]+\))\)$/.test(trimmed)) {
+      return color
+    }
+    
+    // oklch: oklch(0.65 0.15 220)
+    if (/^oklch\([\d\s.]+\)$/.test(trimmed)) {
+      return color
+    }
+    
+    // Check against whitelist for named colors
+    if (VALID_COLOR_NAMES.has(trimmed)) {
+      return color
+    }
+    
+    return ''
+  }
+
+  const sanitizedId = sanitizeCSSIdentifier(id)
+
   return (
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
             ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+${prefix} [data-chart=${sanitizedId}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
       itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
+    const sanitizedKey = sanitizeCSSIdentifier(key)
+    const sanitizedColor = color ? sanitizeCSSColor(color) : ''
+    return sanitizedColor ? `  --color-${sanitizedKey}: ${sanitizedColor};` : null
   })
   .join("\n")}
 }

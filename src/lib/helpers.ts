@@ -20,7 +20,13 @@ export function calculateReputationScore(
 }
 
 export function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  const array = new Uint8Array(12) // Generate enough bytes
+  crypto.getRandomValues(array)
+  const randomPart = Array.from(array, byte => byte.toString(36))
+    .join('')
+    .replaceAll(/[^a-z0-9]/g, '')
+    .substring(0, 9)
+  return `${Date.now()}-${randomPart}`
 }
 
 export const TEAM_EMOJIS = [
@@ -41,11 +47,17 @@ export const TEAM_COLORS = [
 ]
 
 export function getRandomTeamEmoji(): string {
-  return TEAM_EMOJIS[Math.floor(Math.random() * TEAM_EMOJIS.length)]
+  const array = new Uint32Array(1)
+  crypto.getRandomValues(array)
+  const index = array[0] % TEAM_EMOJIS.length
+  return TEAM_EMOJIS[index]
 }
 
 export function getRandomTeamColor(): string {
-  return TEAM_COLORS[Math.floor(Math.random() * TEAM_COLORS.length)].value
+  const array = new Uint32Array(1)
+  crypto.getRandomValues(array)
+  const index = array[0] % TEAM_COLORS.length
+  return TEAM_COLORS[index].value
 }
 
 export function getAchievementTitle(member: TeamMember): string {
