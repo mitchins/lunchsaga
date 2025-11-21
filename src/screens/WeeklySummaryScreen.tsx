@@ -14,8 +14,8 @@ interface WeeklySummaryScreenProps {
 
 export function WeeklySummaryScreen({ history, members, onBack }: WeeklySummaryScreenProps) {
   const getWeekNumber = (period: LunchPeriod) => {
-    const weeksSinceStart = Math.ceil((period.startDate - Date.now()) / (7 * 24 * 60 * 60 * 1000))
-    return Math.abs(weeksSinceStart)
+    const weeksSinceStart = Math.ceil((Date.now() - period.startDate) / (7 * 24 * 60 * 60 * 1000))
+    return Math.max(1, weeksSinceStart)
   }
 
   return (

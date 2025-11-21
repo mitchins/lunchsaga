@@ -178,12 +178,16 @@ function AppRouter() {
       <Route
         path="/profile/:memberId"
         element={
-          <ProfileScreen
-            member={teamMembers[0]} // Mock: would use memberId from route params
-            badges={mockBadges}
-            userBadges={mockUserBadges}
-            onBack={handleBack}
-          />
+          teamMembers.length > 0 ? (
+            <ProfileScreen
+              member={teamMembers[0]} // Mock: would use memberId from route params
+              badges={mockBadges}
+              userBadges={mockUserBadges}
+              onBack={handleBack}
+            />
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
         }
       />
       <Route

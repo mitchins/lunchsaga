@@ -85,11 +85,11 @@ export function TeamDashboardScreen({
               <Users size={16} />
               Roster
             </TabsTrigger>
-            <TabsTrigger value="vote" className="gap-2" onClick={onNavigateToVote}>
+            <TabsTrigger value="vote" className="gap-2">
               <MapPin size={16} />
               Vote
             </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2" onClick={onNavigateToHistory}>
+            <TabsTrigger value="history" className="gap-2">
               <Clock size={16} />
               History
             </TabsTrigger>
@@ -113,10 +113,6 @@ export function TeamDashboardScreen({
                 icon={<Users size={48} />}
                 title="No team members yet"
                 description="Add your teammates to start the fair rotation for weekly lunch picks"
-                action={{
-                  label: 'Add Member',
-                  onClick: () => {},
-                }}
               />
             ) : (
               <>
