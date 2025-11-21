@@ -41,17 +41,17 @@ export function MemberCard({ member, isNextOrganizer, onRemove, onToggleAway, sh
   return (
     <Card className={cn(
       "overflow-hidden transition-all",
-      isNextOrganizer && !isAway && "ring-2 ring-accent shadow-lg",
+      isNextOrganizer && !isAway && "ring-2 ring-saga-gold shadow-lg shadow-saga-gold/20",
       isAway && "opacity-60"
     )}>
       <div 
-        className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/5 transition-colors"
+        className="p-4 flex items-center gap-3 cursor-pointer hover:bg-saga-gold-muted/30 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <Avatar className="h-12 w-12 flex-shrink-0">
           <AvatarFallback className={cn(
             "text-base font-medium",
-            isNextOrganizer && !isAway && "bg-accent text-accent-foreground"
+            isNextOrganizer && !isAway && "bg-gradient-to-br from-saga-gold to-saga-gold/80 text-saga-navy"
           )}>
             {initials}
           </AvatarFallback>
@@ -61,8 +61,11 @@ export function MemberCard({ member, isNextOrganizer, onRemove, onToggleAway, sh
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-medium text-lg truncate">{member.name}</h3>
             {isNextOrganizer && !isAway && (
-              <Badge variant="default" className="bg-accent text-accent-foreground animate-pulse">
-                Up Next
+              <Badge 
+                variant="default" 
+                className="bg-saga-gold text-saga-navy animate-pulse border-saga-gold"
+              >
+                Herald of the Feast
               </Badge>
             )}
             {isAway && (
@@ -73,14 +76,14 @@ export function MemberCard({ member, isNextOrganizer, onRemove, onToggleAway, sh
             )}
           </div>
           {achievementTitle && (
-            <p className="text-xs text-muted-foreground mt-0.5">{achievementTitle}</p>
+            <p className="text-xs text-muted-foreground italic mt-0.5">{achievementTitle}</p>
           )}
           <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-            <span>{member.points} turns</span>
+            <span>{member.points} quests</span>
             {member.totalWins > 0 && (
               <span className="flex items-center gap-1">
-                <Crown size={14} weight="fill" className="text-amber-500" />
-                {member.totalWins} {member.totalWins === 1 ? 'win' : 'wins'}
+                <Crown size={14} weight="fill" style={{ color: 'var(--saga-gold)' }} />
+                {member.totalWins} {member.totalWins === 1 ? 'victory' : 'victories'}
               </span>
             )}
             {member.reputationScore > 0 && (

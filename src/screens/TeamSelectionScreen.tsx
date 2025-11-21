@@ -73,8 +73,8 @@ export function TeamSelectionScreen({ user, teams, onSelectTeam, onCreateTeam, o
           </h1>
           <p className="text-muted-foreground">
             {teams.length === 0 
-              ? 'Create your first team or join an existing one to get started with your lunch rotation'
-              : 'Select a team or create a new one'}
+              ? 'Gather your fellowship and begin your culinary saga'
+              : 'Select your fellowship or forge a new alliance'}
           </p>
         </motion.header>
 
@@ -87,9 +87,9 @@ export function TeamSelectionScreen({ user, teams, onSelectTeam, onCreateTeam, o
           <Card className="cursor-pointer hover:shadow-lg transition-all border-2 border-dashed hover:border-primary/50" onClick={() => setCreateDialogOpen(true)}>
             <CardContent className="flex flex-col items-center justify-center p-8 text-center">
               <Plus size={48} className="mb-3 text-primary" />
-              <h3 className="font-medium text-lg mb-1">Create New Team</h3>
+              <h3 className="font-medium text-lg mb-1">Forge New Fellowship</h3>
               <p className="text-sm text-muted-foreground">
-                Start a lunch rotation for your squad
+                Establish your guild's lunch saga
               </p>
             </CardContent>
           </Card>
@@ -97,9 +97,9 @@ export function TeamSelectionScreen({ user, teams, onSelectTeam, onCreateTeam, o
           <Card className="cursor-pointer hover:shadow-lg transition-all border-2 border-dashed hover:border-primary/50" onClick={() => setJoinDialogOpen(true)}>
             <CardContent className="flex flex-col items-center justify-center p-8 text-center">
               <SignIn size={48} className="mb-3 text-primary" />
-              <h3 className="font-medium text-lg mb-1">Join Existing Team</h3>
+              <h3 className="font-medium text-lg mb-1">Join Fellowship</h3>
               <p className="text-sm text-muted-foreground">
-                Enter an invite code to join
+                Answer the call with an invite code
               </p>
             </CardContent>
           </Card>

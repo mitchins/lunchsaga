@@ -91,6 +91,13 @@ const defaultTheme = {
         overlay: "var(--color-bg-overlay)",
       },
       "focus-ring": "var(--color-focus-ring)",
+      saga: {
+        gold: "var(--color-saga-gold)",
+        "gold-muted": "var(--color-saga-gold-muted)",
+        navy: "var(--color-saga-navy)",
+        slate: "var(--color-saga-slate)",
+        noble: "var(--color-saga-noble)",
+      },
     },
     borderRadius: {
       sm: "var(--radius-sm)",

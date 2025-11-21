@@ -17,19 +17,26 @@ export function BadgeIcon({ badge, earned = false, size = 'md' }: BadgeIconProps
 
   const rarityColors = {
     common: 'from-gray-400 to-gray-600',
-    uncommon: 'from-green-400 to-green-600',
-    rare: 'from-blue-400 to-blue-600',
-    legendary: 'from-yellow-400 to-yellow-600',
+    uncommon: 'from-emerald-400 to-emerald-600',
+    rare: 'from-blue-500 to-indigo-600',
+    legendary: 'from-amber-400 via-yellow-400 to-amber-500',
+  }
+
+  const rarityBorders = {
+    common: 'border-gray-400/30',
+    uncommon: 'border-emerald-400/30',
+    rare: 'border-blue-500/30',
+    legendary: 'border-amber-400/50 shadow-amber-400/20 shadow-lg',
   }
 
   return (
     <div
       className={cn(
-        'relative rounded-full flex items-center justify-center transition-all',
+        'relative rounded-full flex items-center justify-center transition-all border-2',
         sizeClasses[size],
         earned
-          ? `bg-gradient-to-br ${rarityColors[badge.rarity]} shadow-lg`
-          : 'bg-muted opacity-30 grayscale',
+          ? `bg-gradient-to-br ${rarityColors[badge.rarity]} ${rarityBorders[badge.rarity]}`
+          : 'bg-muted opacity-30 grayscale border-muted',
         earned && 'hover:scale-110 cursor-pointer'
       )}
       title={badge.name}
