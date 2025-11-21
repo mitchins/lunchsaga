@@ -131,7 +131,8 @@ npx playwright show-report
 
 Test configuration is in `playwright.config.ts`. Key settings:
 
-- **Base URL**: `http://localhost:5173` (local Vite dev server)
+- **Base URL**: `http://localhost:5000` (local Vite dev server)
+  - Note: Port 5000 is used instead of the default 5173 to avoid conflicts with Spark
 - **Timeout**: Default test timeout
 - **Retries**: 2 retries on CI, 0 locally
 - **Workers**: Single worker on CI, parallel locally
