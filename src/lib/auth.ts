@@ -8,7 +8,7 @@ function generateSecureCode(length: number = 6): string {
     crypto.getRandomValues(array)
     const chunk = Array.from(array, byte => byte.toString(36))
       .join('')
-      .replace(/[^a-z0-9]/g, '')
+      .replaceAll(/[^a-z0-9]/g, '')
       .toUpperCase()
     result += chunk
   }

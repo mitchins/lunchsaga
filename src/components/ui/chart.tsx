@@ -78,7 +78,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 
   // Sanitize CSS identifier to prevent injection
   const sanitizeCSSIdentifier = (str: string): string => {
-    return str.replace(/[^a-zA-Z0-9_-]/g, '')
+    return str.replaceAll(/[^a-zA-Z0-9_-]/g, '')
   }
 
   // Whitelist of valid CSS color keywords
@@ -91,30 +91,36 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   // Sanitize CSS color value to prevent injection
   const sanitizeCSSColor = (color: string): string => {
     // Trim whitespace
-    color = color.trim().toLowerCase()
+    const trimmed = color.trim().toLowerCase()
+    
+    // Allow CSS custom properties (var)
+    if (/^var\(--[\w-]+\)$/.test(trimmed)) {
+      return color
+    }
     
     // Check for hex colors
-    if (/^#[0-9a-f]{3}$|^#[0-9a-f]{6}$|^#[0-9a-f]{8}$/.test(color)) {
+    if (/^#[\da-f]{3,8}$/.test(trimmed)) {
       return color
     }
     
-    // Check for rgb/rgba with strict numeric pattern
-    if (/^rgba?\(\s*[0-9]{1,3}\s*,\s*[0-9]{1,3}\s*,\s*[0-9]{1,3}\s*(,\s*[0-9.]+\s*)?\)$/.test(color)) {
+    // Check for color functions with var() support
+    // rgb/rgba: rgb(255, 0, 0) or rgb(var(--color))
+    if (/^rgba?\((?:[\d\s,.]+|var\(--[\w-]+\))\)$/.test(trimmed)) {
       return color
     }
     
-    // Check for hsl/hsla with strict numeric pattern
-    if (/^hsla?\(\s*[0-9]{1,3}\s*,\s*[0-9]{1,3}%\s*,\s*[0-9]{1,3}%\s*(,\s*[0-9.]+\s*)?\)$/.test(color)) {
+    // hsl/hsla: hsl(120, 100%, 50%) or hsl(var(--color))
+    if (/^hsla?\((?:[\d\s,.%]+|var\(--[\w-]+\))\)$/.test(trimmed)) {
       return color
     }
     
-    // Check for oklch with strict numeric pattern
-    if (/^oklch\(\s*[0-9.]+\s+[0-9.]+\s+[0-9.]+\s*\)$/.test(color)) {
+    // oklch: oklch(0.65 0.15 220)
+    if (/^oklch\([\d\s.]+\)$/.test(trimmed)) {
       return color
     }
     
     // Check against whitelist for named colors
-    if (VALID_COLOR_NAMES.has(color)) {
+    if (VALID_COLOR_NAMES.has(trimmed)) {
       return color
     }
     

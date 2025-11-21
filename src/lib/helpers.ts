@@ -24,7 +24,7 @@ export function generateId(): string {
   crypto.getRandomValues(array)
   const randomPart = Array.from(array, byte => byte.toString(36))
     .join('')
-    .replace(/[^a-z0-9]/g, '')
+    .replaceAll(/[^a-z0-9]/g, '')
     .substring(0, 9)
   return `${Date.now()}-${randomPart}`
 }
