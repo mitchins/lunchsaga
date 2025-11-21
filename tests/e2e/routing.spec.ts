@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { quickLogin } from './helpers';
 
 /**
  * Routing Robustness Tests
@@ -103,24 +104,8 @@ test.describe('Routing Robustness', () => {
   });
 
   test('navigation state persists on page refresh', async ({ page }) => {
-    // Navigate through the app
-    await page.goto('/');
-    
     // Quick login
-    const emailInput = page.getByRole('textbox', { name: /email/i });
-    if (await emailInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await emailInput.fill('test@example.com');
-      await page.getByRole('button').first().click();
-      await page.waitForTimeout(500);
-      
-      const codeInput = page.getByRole('textbox', { name: /code|verify/i });
-      if (await codeInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await codeInput.fill('ABCD1234');
-        await page.getByRole('button').first().click();
-      }
-    }
-    
-    await page.waitForLoadState('networkidle');
+    await quickLogin(page);
     
     // Navigate to a specific page
     await page.goto('/leaderboard');
@@ -152,23 +137,7 @@ test.describe('Routing Robustness', () => {
   });
 
   test('browser back button works correctly', async ({ page }) => {
-    await page.goto('/');
-    
-    // Quick login
-    const emailInput = page.getByRole('textbox', { name: /email/i });
-    if (await emailInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await emailInput.fill('test@example.com');
-      await page.getByRole('button').first().click();
-      await page.waitForTimeout(500);
-      
-      const codeInput = page.getByRole('textbox', { name: /code|verify/i });
-      if (await codeInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await codeInput.fill('ABCD1234');
-        await page.getByRole('button').first().click();
-      }
-    }
-    
-    await page.waitForLoadState('networkidle');
+    await quickLogin(page);
     
     // Navigate to dashboard then leaderboard
     await page.goto('/dashboard');
@@ -189,23 +158,7 @@ test.describe('Routing Robustness', () => {
   });
 
   test('browser forward button works correctly', async ({ page }) => {
-    await page.goto('/');
-    
-    // Quick login
-    const emailInput = page.getByRole('textbox', { name: /email/i });
-    if (await emailInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await emailInput.fill('test@example.com');
-      await page.getByRole('button').first().click();
-      await page.waitForTimeout(500);
-      
-      const codeInput = page.getByRole('textbox', { name: /code|verify/i });
-      if (await codeInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await codeInput.fill('ABCD1234');
-        await page.getByRole('button').first().click();
-      }
-    }
-    
-    await page.waitForLoadState('networkidle');
+    await quickLogin(page);
     
     // Navigate forward and back
     await page.goto('/dashboard');

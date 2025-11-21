@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { quickLogin } from './helpers';
 
 /**
  * Profile & Badges Tests
@@ -8,23 +9,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Profile & Badges', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    
-    // Quick login
-    const emailInput = page.getByRole('textbox', { name: /email/i });
-    if (await emailInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await emailInput.fill('test@example.com');
-      await page.getByRole('button').first().click();
-      await page.waitForTimeout(500);
-      
-      const codeInput = page.getByRole('textbox', { name: /code|verify/i });
-      if (await codeInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await codeInput.fill('ABCD1234');
-        await page.getByRole('button').first().click();
-      }
-    }
-    
-    await page.waitForLoadState('networkidle');
+    await quickLogin(page);
   });
 
   test('profile screen loads when navigated to', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, ConsoleMessage } from '@playwright/test';
 
 /**
  * Test Utilities
@@ -13,7 +13,7 @@ import { Page } from '@playwright/test';
 export async function quickLogin(page: Page, email = 'test@example.com'): Promise<void> {
   // Listen for console messages to catch the magic link code
   let magicCode = '';
-  const consoleHandler = (msg: any) => {
+  const consoleHandler = (msg: ConsoleMessage) => {
     const text = msg.text();
     const match = text.match(/Magic link code.*: ([A-Z0-9]+)/);
     if (match) {
