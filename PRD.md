@@ -16,11 +16,11 @@ LunchSaga is a zero-friction team ritual webapp that automates weekly lunch rota
 **Target Market:** Small to medium workplace teams (startups, agencies, corporate squads) who share regular team lunches or similar recurring group activities.
 
 **Success Metrics:**
-- Teams complete 4+ consecutive weekly rotations without abandonment
-- Average member participation rate >80% in voting
-- Weekly active teams grow 15% month-over-month
-- Average team size: 5-10 members
-- Multi-team adoption: 40% of users belong to 2+ teams
+- Teams complete 4+ consecutive weekly rotations without abandonment (measured after 30 days)
+- Average member participation rate >80% in voting (baseline: 0%, measured weekly)
+- Weekly active teams grow 15% month-over-month (measured at end of each month)
+- Average team size: 5-10 members (measured continuously, reported monthly)
+- Multi-team adoption: 40% of users belong to 2+ teams (measured after 60 days)
 
 **Key Differentiators:**
 - **Zero setup friction:** Magic-link auth eliminates password barriers
@@ -414,11 +414,11 @@ LunchSaga is a zero-friction team ritual webapp that automates weekly lunch rota
 ## 5. Non-Functional Requirements
 
 ### Performance
-- **Page Load Time:** Initial page load <2 seconds on 3G connection
-- **Time to Interactive:** <3 seconds
-- **API Response Time:** <200ms for read operations, <500ms for write operations
-- **Real-time Updates:** Vote counts update within 1 second of casting
-- **Concurrent Users:** Support 1000+ concurrent users without degradation
+- **Page Load Time:** Initial page load <2 seconds on 3G connection (3G defined as ~400 Kbps, 400ms RTT; measured via Chrome DevTools throttling, WebPageTest.org)
+- **Time to Interactive:** <3 seconds (measured via Lighthouse TTI metric)
+- **API Response Time:** <200ms for read operations, <500ms for write operations (measured at p95; monitored via Cloudflare Analytics)
+- **Real-time Updates:** Vote counts update within 1 second of casting (measured end-to-end from vote submission to UI update)
+- **Concurrent Users:** Support 1000+ concurrent users without degradation (measured via load testing with k6 or Artillery)
 
 ### Security
 - **Authentication:** Token-based auth with httpOnly cookies, 30-day expiration
@@ -734,7 +734,9 @@ Junction table linking users to teams with role and status information.
 - One-to-Many → Vote (a member can cast many votes)
 
 **Unique Constraints:**
-- `(user_id, team_id)` if `user_id` is not null (prevent duplicate membership)
+- `(user_id, team_id)` where `user_id IS NOT NULL` (prevent duplicate membership for authenticated users)
+  - **Implementation Note:** PostgreSQL supports partial unique indexes: `CREATE UNIQUE INDEX ON Membership (user_id, team_id) WHERE user_id IS NOT NULL;`
+  - For databases without partial indexes (e.g., MySQL <8.0), use application-level validation or unique constraint on nullable column
 - `(name, team_id)` (prevent duplicate names in same team)
 
 **Indexes:**
@@ -880,10 +882,13 @@ Tracks all-time organizer assignments for leaderboard and reputation (post-MVP).
 ```
 FUNCTION getNextPicker(team_id):
     // Fetch all active members (not marked as away)
-    active_members = SELECT * FROM Membership
+    // Note: Only select needed fields for efficiency
+    active_members = SELECT id, name, points, user_id
+                     FROM Membership
                      WHERE team_id = team_id
                      AND is_away = false
                      ORDER BY points ASC, name ASC
+    // Requires index: (team_id, is_away, points, name) for optimal performance
     
     // Handle edge cases
     IF active_members.length == 0:
