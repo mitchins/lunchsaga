@@ -1,11 +1,23 @@
+function generateSecureCode(length: number = 6): string {
+  const array = new Uint8Array(length)
+  crypto.getRandomValues(array)
+  return Array.from(array, byte => byte.toString(36).padStart(2, '0'))
+    .join('')
+    .substring(0, length)
+    .toUpperCase()
+}
+
 export async function sendMagicLink(email: string): Promise<boolean> {
   await new Promise(resolve => setTimeout(resolve, 800))
   
-  const linkCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+  const linkCode = generateSecureCode(6)
   localStorage.setItem('magic-link-code', linkCode)
   localStorage.setItem('magic-link-email', email)
   
-  console.log(`🔗 Magic link code for ${email}: ${linkCode}`)
+  // Only log in development mode
+  if (import.meta.env.DEV) {
+    console.log(`🔗 Magic link code for ${email}: ${linkCode}`)
+  }
   
   return true
 }
@@ -26,5 +38,5 @@ export async function verifyMagicLink(email: string, code: string): Promise<bool
 }
 
 export function generateInviteCode(): string {
-  return Math.random().toString(36).substring(2, 8).toUpperCase()
+  return generateSecureCode(6)
 }

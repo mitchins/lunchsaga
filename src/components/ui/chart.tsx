@@ -76,19 +76,35 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
+  // Sanitize CSS identifier to prevent injection
+  const sanitizeCSSIdentifier = (str: string): string => {
+    return str.replace(/[^a-zA-Z0-9_-]/g, '')
+  }
+
+  // Sanitize CSS color value to prevent injection
+  const sanitizeCSSColor = (color: string): string => {
+    // Allow valid CSS color formats
+    const colorPattern = /^(#[0-9a-fA-F]{3,8}|rgb\([^)]+\)|rgba\([^)]+\)|hsl\([^)]+\)|hsla\([^)]+\)|oklch\([^)]+\)|[a-zA-Z]+)$/
+    return colorPattern.test(color) ? color : ''
+  }
+
+  const sanitizedId = sanitizeCSSIdentifier(id)
+
   return (
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
             ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+${prefix} [data-chart=${sanitizedId}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
       itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
+    const sanitizedKey = sanitizeCSSIdentifier(key)
+    const sanitizedColor = color ? sanitizeCSSColor(color) : ''
+    return sanitizedColor ? `  --color-${sanitizedKey}: ${sanitizedColor};` : null
   })
   .join("\n")}
 }

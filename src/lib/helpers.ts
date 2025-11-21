@@ -20,7 +20,12 @@ export function calculateReputationScore(
 }
 
 export function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  const array = new Uint8Array(9)
+  crypto.getRandomValues(array)
+  const randomPart = Array.from(array, byte => byte.toString(36).padStart(2, '0'))
+    .join('')
+    .substring(0, 9)
+  return `${Date.now()}-${randomPart}`
 }
 
 export const TEAM_EMOJIS = [
