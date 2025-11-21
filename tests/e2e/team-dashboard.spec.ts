@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { quickLogin, selectFirstTeam } from './helpers';
 
 /**
  * Team Dashboard Tests
@@ -10,34 +11,16 @@ import { test, expect } from '@playwright/test';
 test.describe('Team Dashboard', () => {
   // Helper to navigate to dashboard (assumes mock data is available)
   test.beforeEach(async ({ page }) => {
-    // In mock environment, we can navigate directly
-    // In real environment, this would go through login flow
-    await page.goto('/');
-    
-    // Quick login flow
-    const emailInput = page.getByRole('textbox', { name: /email/i });
-    if (await emailInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await emailInput.fill('test@example.com');
-      const submitButton = page.getByRole('button').first();
-      await submitButton.click();
-      await page.waitForTimeout(500);
-      
-      // Handle code if needed
-      const codeInput = page.getByRole('textbox', { name: /code|verify/i });
-      if (await codeInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await codeInput.fill('ABCD1234');
-        const verifyButton = page.getByRole('button').first();
-        await verifyButton.click();
-      }
-    }
+    // Use the helper to log in
+    await quickLogin(page);
     
     // Navigate to dashboard if not already there
     if (!page.url().includes('/dashboard')) {
       // Try to select a team if on teams page
-      const teamCard = page.locator('[role="button"]', { hasText: /team/i }).first();
-      if (await teamCard.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await teamCard.click();
-      } else {
+      await selectFirstTeam(page);
+      
+      // If still not on dashboard, navigate directly
+      if (!page.url().includes('/dashboard')) {
         await page.goto('/dashboard');
       }
     }

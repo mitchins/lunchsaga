@@ -8,23 +8,43 @@ import { Page } from '@playwright/test';
 
 /**
  * Performs a quick login using mock credentials.
- * This navigates through the login flow automatically.
+ * This navigates through the login flow automatically and extracts the magic code.
  */
-export async function quickLogin(page: Page, email = 'test@example.com') {
+export async function quickLogin(page: Page, email = 'test@example.com'): Promise<void> {
+  // Listen for console messages to catch the magic link code
+  let magicCode = '';
+  const consoleHandler = (msg: any) => {
+    const text = msg.text();
+    const match = text.match(/Magic link code.*: ([A-Z0-9]+)/);
+    if (match) {
+      magicCode = match[1];
+    }
+  };
+  
+  page.on('console', consoleHandler);
+  
   await page.goto('/');
   
   const emailInput = page.getByRole('textbox', { name: /email/i });
   if (await emailInput.isVisible({ timeout: 2000 }).catch(() => false)) {
     await emailInput.fill(email);
-    await page.getByRole('button').first().click();
-    await page.waitForTimeout(500);
+    const submitButton = page.getByRole('button').first();
+    await submitButton.click();
+    await page.waitForTimeout(1500);
     
     const codeInput = page.getByRole('textbox', { name: /code|verify/i });
-    if (await codeInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await codeInput.fill('ABCD1234');
-      await page.getByRole('button').first().click();
+    if (await codeInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      if (magicCode) {
+        await codeInput.fill(magicCode);
+        const verifyButton = page.getByRole('button').first();
+        await verifyButton.click();
+        await page.waitForTimeout(1000);
+      }
     }
   }
+  
+  // Remove console listener
+  page.off('console', consoleHandler);
   
   await page.waitForLoadState('networkidle');
 }
