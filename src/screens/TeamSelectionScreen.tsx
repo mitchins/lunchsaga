@@ -20,7 +20,7 @@ interface TeamSelectionProps {
   onJoinTeam: (inviteCode: string) => void
 }
 
-export function TeamSelection({ user, teams, onSelectTeam, onCreateTeam, onJoinTeam }: TeamSelectionProps) {
+export function TeamSelectionScreen({ user, teams, onSelectTeam, onCreateTeam, onJoinTeam }: TeamSelectionProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [joinDialogOpen, setJoinDialogOpen] = useState(false)
   const [teamName, setTeamName] = useState('')
