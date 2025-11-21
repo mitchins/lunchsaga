@@ -1,4 +1,5 @@
-import { Page, ConsoleMessage } from '@playwright/test';
+import { Page, ConsoleMessage, expect } from '@playwright/test';
+import { isRouteAllowed } from '@/utils/navigation';
 
 /**
  * Test Utilities
@@ -10,6 +11,7 @@ import { Page, ConsoleMessage } from '@playwright/test';
  * Performs a quick login using mock credentials.
  * This navigates through the login flow automatically and extracts the magic code.
  */
+/* istanbul ignore next */
 export async function quickLogin(page: Page, email = 'test@example.com'): Promise<void> {
   // Listen for console messages to catch the magic link code
   let magicCode = '';
@@ -52,6 +54,7 @@ export async function quickLogin(page: Page, email = 'test@example.com'): Promis
 /**
  * Navigates to a team selection if on teams page.
  */
+/* istanbul ignore next */
 export async function selectFirstTeam(page: Page) {
   const teamCard = page.locator('[role="button"]').filter({ hasText: /team/i }).first();
   if (await teamCard.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -63,6 +66,7 @@ export async function selectFirstTeam(page: Page) {
 /**
  * Waits for any loading/animation states to complete.
  */
+/* istanbul ignore next */
 export async function waitForPageIdle(page: Page) {
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(300); // Small buffer for animations
@@ -71,6 +75,7 @@ export async function waitForPageIdle(page: Page) {
 /**
  * Closes any open toast notifications.
  */
+/* istanbul ignore next */
 export async function closeToasts(page: Page) {
   const toasts = page.locator('[data-sonner-toast]');
   const count = await toasts.count();
@@ -90,5 +95,22 @@ export async function closeToasts(page: Page) {
 export async function navigateAndWait(page: Page, path: string): Promise<void> {
   await page.goto(path);
   await page.waitForLoadState('networkidle');
+}
+
+/**
+ * Navigates to a route and verifies the document body is visible.
+ */
+/* istanbul ignore next */
+export async function navigateAndEnsureVisible(page: Page, path: string): Promise<void> {
+  await navigateAndWait(page, path);
+  await expect(page.locator('body')).toBeVisible();
+}
+
+/**
+ * Validates that a URL matches at least one of the provided valid path segments.
+ */
+export function isValidPath(url: string, validPaths: string[]): boolean {
+  if (!url) return false;
+  return isRouteAllowed(url, validPaths);
 }
 
