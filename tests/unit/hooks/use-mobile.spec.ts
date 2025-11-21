@@ -9,25 +9,30 @@ describe('useIsMobile', () => {
   beforeEach(() => {
     listeners = [];
     
-    matchMediaMock = (query: string) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      addEventListener: vi.fn((event: string, listener: (event: MediaQueryListEvent) => void) => {
-        if (event === 'change') {
-          listeners.push(listener);
-        }
-      }),
-      removeEventListener: vi.fn((event: string, listener: (event: MediaQueryListEvent) => void) => {
-        const index = listeners.indexOf(listener);
-        if (index !== -1) {
-          listeners.splice(index, 1);
-        }
-      }),
-      dispatchEvent: vi.fn(),
-    } as unknown as MediaQueryList);
+    matchMediaMock = (query: string) => {
+      // Determine if the media query matches based on current window width
+      const matches = window.innerWidth < 768;
+      
+      return {
+        matches,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn((event: string, listener: (event: MediaQueryListEvent) => void) => {
+          if (event === 'change') {
+            listeners.push(listener);
+          }
+        }),
+        removeEventListener: vi.fn((event: string, listener: (event: MediaQueryListEvent) => void) => {
+          const index = listeners.indexOf(listener);
+          if (index !== -1) {
+            listeners.splice(index, 1);
+          }
+        }),
+        dispatchEvent: vi.fn(),
+      } as unknown as MediaQueryList;
+    };
 
     window.matchMedia = vi.fn(matchMediaMock);
   });
