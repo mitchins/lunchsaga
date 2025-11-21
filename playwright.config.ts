@@ -4,6 +4,10 @@ import { defineConfig, devices } from '@playwright/test';
  * Playwright configuration for LunchSaga E2E tests
  * Tests run against the local Vite dev server with mock data
  */
+
+const PORT = 5000;
+const BASE_URL = `http://localhost:${PORT}`;
+
 export default defineConfig({
   testDir: './tests/e2e',
   
@@ -25,7 +29,7 @@ export default defineConfig({
   // Shared settings for all the projects below
   use: {
     // Base URL to use in actions like `await page.goto('/')`
-    baseURL: process.env.BASE_URL || 'http://localhost:5000',
+    baseURL: process.env.BASE_URL || BASE_URL,
     
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',
@@ -48,7 +52,7 @@ export default defineConfig({
   // Run local dev server before starting the tests
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5000',
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
     stdout: 'ignore',

@@ -28,7 +28,7 @@ export async function quickLogin(page: Page, email = 'test@example.com'): Promis
   const emailInput = page.getByRole('textbox', { name: /email/i });
   if (await emailInput.isVisible({ timeout: 2000 }).catch(() => false)) {
     await emailInput.fill(email);
-    const submitButton = page.getByRole('button').first();
+    const submitButton = page.getByRole('button', { name: /continue|send|sign in|login/i }).first();
     await submitButton.click();
     await page.waitForTimeout(1500);
     
@@ -36,7 +36,7 @@ export async function quickLogin(page: Page, email = 'test@example.com'): Promis
     if (await codeInput.isVisible({ timeout: 2000 }).catch(() => false)) {
       if (magicCode) {
         await codeInput.fill(magicCode);
-        const verifyButton = page.getByRole('button').first();
+        const verifyButton = page.getByRole('button', { name: /verify|confirm/i }).first();
         await verifyButton.click();
         await page.waitForTimeout(1000);
       }
