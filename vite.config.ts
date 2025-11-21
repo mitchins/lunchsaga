@@ -29,14 +29,29 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'node',
+    environment: 'jsdom',
     setupFiles: [],
     exclude: [...configDefaults.exclude, 'tests/e2e/**/*'],
     coverage: {
-      reporter: ['text', 'lcov'],
+      reporter: ['text', 'lcov', 'html'],
       reportsDirectory: 'coverage',
-      include: ['src/utils/navigation.ts'],
-      exclude: ['tests/**/*.spec.ts', 'playwright.config.ts', 'tests/e2e/helpers.ts']
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      exclude: [
+        'tests/**/*',
+        '**/*.d.ts',
+        'src/**/*.spec.ts',
+        'src/**/*.test.ts',
+        'src/main.tsx',
+        'src/vite-end.d.ts',
+        'src/mocks/**/*',
+        'src/components/ui/**/*',
+        'playwright.config.ts'
+      ],
+      all: true,
+      lines: 80,
+      functions: 80,
+      branches: 80,
+      statements: 80
     },
     tsconfig: './tsconfig.vitest.json'
   }
