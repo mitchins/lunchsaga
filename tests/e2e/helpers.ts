@@ -83,3 +83,12 @@ export async function closeToasts(page: Page) {
     }
   }
 }
+
+/**
+ * Navigates to a specific route and waits for page to be ready.
+ */
+export async function navigateAndWait(page: Page, path: string): Promise<void> {
+  await page.goto(path);
+  await page.waitForLoadState('networkidle');
+}
+

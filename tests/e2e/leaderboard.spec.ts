@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { quickLogin } from './helpers';
+import { quickLogin, navigateAndWait } from './helpers';
 
 /**
  * Leaderboard Screen Tests
@@ -14,8 +14,7 @@ test.describe('Leaderboard Screen', () => {
   });
 
   test('leaderboard loads and displays mock data', async ({ page }) => {
-    await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await navigateAndWait(page, '/leaderboard');
     
     // Verify URL
     expect(page.url()).toContain('/leaderboard');
