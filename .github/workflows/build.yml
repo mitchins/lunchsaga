@@ -10,6 +10,8 @@ jobs:
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,6 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: sonarqube
+    permissions:
+      contents: read
+      deployments: write
     steps:
       - uses: actions/checkout@v4
       
