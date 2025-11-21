@@ -138,7 +138,7 @@ export function TeamSelection({ user, teams, onSelectTeam, onCreateTeam, onJoinT
                       <div className="flex-1">
                         <h3 className="font-medium text-lg">{team.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {team.ownerId === user.id ? 'Owner' : 'Member'}
+                          {team.ownerId === user.id ? 'Guild Master' : 'Member'}
                         </p>
                       </div>
                       <UsersIcon size={24} className="text-muted-foreground" />
