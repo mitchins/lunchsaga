@@ -35,7 +35,9 @@ LunchSaga is a zero-friction team ritual webapp that automates weekly lunch rota
 ### MUST HAVE (MVP Blockers)
 
 **Authentication & Identity**
-- Magic-link email authentication (passwordless)
+- Magic-link email authentication with OTP fallback (passwordless)
+  - Users receive both a clickable magic link AND a 6-digit code in the same email
+  - Either method completes authentication
 - Persistent session management
 - Multi-device support
 
@@ -174,18 +176,21 @@ LunchSaga is a zero-friction team ritual webapp that automates weekly lunch rota
 
 ### Epic 1: Authentication & Onboarding
 
-#### US-101: Magic Link Authentication
+#### US-101: Magic Link Authentication with OTP Fallback
 **As a** first-time user  
-**I want to** log in using only my email address  
+**I want to** log in using only my email address with either a magic link or code  
 **So that** I can access the app without creating a password
 
 **Acceptance Criteria:**
 - **GIVEN** I am not logged in
 - **WHEN** I enter my email address and click "Send Magic Link"
-- **THEN** I receive a 6-digit verification code via email within 30 seconds
-- **AND** I can enter the code on the verification screen
-- **AND** upon successful verification, I am logged in and redirected to team selection
-- **AND** my session persists for 30 days or until I log out
+- **THEN** I receive an email within 30 seconds
+- **AND** the email contains a clickable magic login link
+- **AND** the email contains a 6-digit one-time code for manual entry
+- **AND** clicking the magic link logs me in directly and redirects to team selection
+- **AND** OR I can enter the 6-digit code on the verification screen to log in
+- **AND** upon successful authentication (either method), my session persists for 30 days or until I log out
+- **AND** both the magic link and code expire after 10 minutes
 
 #### US-102: Return User Session
 **As a** returning user  
@@ -463,7 +468,9 @@ LunchSaga is a zero-friction team ritual webapp that automates weekly lunch rota
 
 ## 6. System Flows
 
-### 6.1 Authentication Flow (Magic Link)
+### 6.1 Authentication Flow (Magic Link + OTP Fallback)
+
+**Implementation Note:** LunchSaga uses magic-link authentication with an optional OTP fallback. Users receive both a clickable link AND a 6-digit code in the same email. Either method completes authentication.
 
 ```
 [User visits app]
@@ -475,28 +482,39 @@ LunchSaga is a zero-friction team ritual webapp that automates weekly lunch rota
                       ↓
                    [User enters email]
                       ↓
-                   [System generates 6-digit code]
+                   [System generates magic link token + 6-digit code]
                       ↓
-                   [Email sent with code (10-min expiry)]
+                   [Email sent with BOTH link and code (10-min expiry)]
                       ↓
-                   [User enters code on verification screen]
-                      ↓
-                      ├─[Valid code]─→[Create session token]
-                      │                    ↓
-                      │                [Set httpOnly cookie (30-day)]
-                      │                    ↓
-                      │                [Redirect to team selection]
+                      ├─[User clicks magic link in email]
+                      │        ↓
+                      │    [Validate token]
+                      │        ↓
+                      │    [Create session token]
+                      │        ↓
+                      │    [Set httpOnly cookie (30-day)]
+                      │        ↓
+                      │    [Redirect to team selection]
                       │
-                      └─[Invalid code]─→[Show error: "Invalid code. Try again."]
-                                          ↓
-                                       [Allow retry or resend]
+                      └─[User enters 6-digit code on verification screen]
+                               ↓
+                               ├─[Valid code]─→[Create session token]
+                               │                    ↓
+                               │                [Set httpOnly cookie (30-day)]
+                               │                    ↓
+                               │                [Redirect to team selection]
+                               │
+                               └─[Invalid code]─→[Show error: "Invalid code. Try again."]
+                                                   ↓
+                                                [Allow retry or resend]
 ```
 
 **Edge Cases:**
 - Email delivery failure: Show "Didn't receive code? Resend" after 60 seconds
-- Code expiry: Prompt to request new code
+- Code/link expiry: Prompt to request new authentication email
 - Multiple login attempts: Rate limit to 5 attempts per email per hour
 - Session expiry: Silent re-auth or redirect to login
+- Magic link clicked on different device: Works seamlessly, creates session on that device
 
 ---
 
@@ -1401,6 +1419,921 @@ END FUNCTION
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2025-11-20 | Product Owner | Initial PRD creation for MVP |
+| 1.1 | 2025-11-21 | Product Owner | Clarified auth flow (magic link + OTP), added MVP+ scope |
+
+---
+
+# MVP+ (MVP Stretch) Requirements
+
+## 13. Executive Summary - MVP+
+
+**What MVP+ Adds:** Light gamification, lore-consistent theming, enhanced engagement features, and personalization that increase stickiness and differentiation without adding complexity. MVP+ transforms LunchSaga from a functional rotation tool into a delightful micro-ritual experience with narrative flavor.
+
+**Why Now:** Early adopters respond strongly to personality and playfulness. Adding badges, streaks, and "saga" theming in the first release creates memorable moments that drive word-of-mouth and retention. These features are low-cost to implement but high-impact for user delight.
+
+**Scope Discipline:** All MVP+ features maintain the core "zero admin" philosophy. Nothing requires configuration, moderation, or ongoing maintenance. Gamification is opt-out (always visible but ignorable). Theming is playful but professional.
+
+**Key Additions:**
+- **Gamification:** Badges, achievement titles, team streaks, weekly MVP recognition
+- **Lore/Theming:** "Saga" narrative flavor text for picks, seasonal quest prompts, playful language
+- **Engagement:** Weekly team summary emails, mini-achievements, organizer spotlight
+- **Personalization:** User avatars, team banner images, custom member titles
+- **Analytics:** Simple venue stats (most popular, win rates), member contribution metrics
+
+**Success Metrics (MVP+ Specific):**
+- 40%+ users earn at least one badge within 30 days
+- 25%+ teams maintain a 4+ week streak
+- 60%+ users customize their avatar
+- Weekly summary email open rate >50%
+- Badge/achievement views per user per month: 3+
+
+---
+
+## 14. MVP+ Feature List
+
+### MUST HAVE (MVP+ Blockers)
+
+**Gamification Core**
+- Badge system with 8-12 core badges
+- Achievement titles that display on member cards
+- Team streak tracking (consecutive weeks without skips)
+- Weekly MVP auto-selection (most votes received)
+- Badge showcase on member profiles
+
+**Lore & Theming**
+- "Saga" terminology throughout (e.g., "Your Quest," "The Council Votes")
+- Weekly flavor text for picks (optional, auto-generated)
+- Seasonal quest prompts (simple text suggestions, no new mechanics)
+- Playful achievement names aligned with "saga" theme
+
+**Engagement Features**
+- Weekly team summary (email digest with stats, MVP, next picker)
+- Mini-achievements (first vote, first pick, 10 picks, etc.)
+- Organizer spotlight in status bar when voting active
+
+**Personalization**
+- User avatar upload (or emoji/icon selector)
+- Custom member titles (editable by admins, max 20 chars)
+- Team banner image (optional header image)
+
+**Simple Analytics**
+- Venue win rate (how often each venue wins when proposed)
+- Member contribution score (picks organized + votes cast)
+- Most popular venue (team-wide)
+
+### SHOULD HAVE (High Value, Post-MVP+ Week 1)
+
+**Advanced Gamification**
+- Seasonal badge resets (keeps competition fresh)
+- Team-wide achievements (entire team earns collective badge)
+- Badge rarity tiers (common, rare, legendary)
+- Achievement progress bars (e.g., "7/10 picks organized")
+
+**Enhanced Theming**
+- Custom quest prompts (admins can write their own)
+- Themed venue categories (tags like "Adventure," "Classic," "Hidden Gem")
+- Seasonal event theming (winter, summer, holidays)
+
+**Social Features**
+- "Great pick!" quick reactions on venues (beyond star ratings)
+- Organizer can add a note when proposing venues ("Why I chose this")
+- Team announcement banner (admin can post short message)
+
+**Profile Enhancements**
+- Personal stats dashboard (your picks, your win rate, your streak)
+- Member bio field (optional 100-char description)
+- Favorite venues list
+
+### WON'T HAVE (Out of Scope for MVP+)
+
+**Over-Complex Gamification**
+- Point systems beyond the rotation points (no separate "XP" or "coins")
+- Leaderboards beyond simple stats (no ranked competitions)
+- Purchasable rewards or premium badges
+- Daily quests or check-ins (weekly only)
+- Multiplayer/competitive features across teams
+
+**Heavy Theming**
+- Animations beyond simple badge reveals
+- Sound effects or music
+- Full narrative storylines or campaigns
+- Character creation or role-playing elements
+- Custom illustrations or artwork for each badge
+
+**Admin Overhead**
+- Manual badge assignment
+- Custom achievement builders
+- Complex quest logic or branching paths
+- Content moderation tools (keep it simple and safe)
+
+---
+
+## 15. Gamification Features (MVP+ Scope)
+
+### 15.1 Badge System
+
+**Design Philosophy:** Badges celebrate participation and quality without creating pressure or elitism. All badges are achievable by active members. No badges are exclusive or time-limited (seasonal badges rotate but return yearly).
+
+**Core Badges (8 Badges):**
+
+1. **🌟 First Quest** - Organize your first lunch pick
+   - **Trigger:** Complete first week as organizer
+   - **Rarity:** Common (everyone earns this)
+
+2. **🍜 Culinary Explorer** - Propose 5 different venues
+   - **Trigger:** Organize 5 weeks with 5 unique venue choices
+   - **Rarity:** Common
+
+3. **🏆 Crowd Pleaser** - Win 3 votes with 80%+ team approval
+   - **Trigger:** 3 of your picks receive votes from 80%+ of active members
+   - **Rarity:** Uncommon
+
+4. **⭐ Perfect Pick** - Achieve unanimous vote on a venue
+   - **Trigger:** All active team members vote for your venue
+   - **Rarity:** Rare
+
+5. **🔥 Hot Streak** - Organize 3 consecutive weeks
+   - **Trigger:** Be organizer 3 weeks in a row (through rotation fairness)
+   - **Rarity:** Uncommon
+
+6. **🗳️ Devoted Voter** - Vote in 10 consecutive weeks
+   - **Trigger:** Cast vote every week for 10 weeks straight
+   - **Rarity:** Uncommon
+
+7. **🎖️ Veteran Organizer** - Complete 25 picks
+   - **Trigger:** Organize 25 total lunch picks
+   - **Rarity:** Rare
+
+8. **👑 Legendary Curator** - Maintain 4.5+ average rating over 10 picks
+   - **Trigger:** 10+ organized picks with average post-lunch rating ≥4.5 stars
+   - **Rarity:** Legendary (requires post-lunch feedback feature)
+
+**Badge Display:**
+- Member cards show up to 3 most prestigious badges (legendary > rare > uncommon > common)
+- Profile view shows all earned badges in grid
+- Badge earned notification appears as toast when unlocked
+- Team feed shows recent badge earns (optional, can be disabled)
+
+**Anti-Cringe Measures:**
+- No badges for "logging in X days in a row" (participation theater)
+- No badges that require spending money or inviting friends
+- No corporate language ("Synergy Master," "Team Player") - keep it food/adventure themed
+- No badges that shame non-participants ("Slacker," "Ghost")
+- Opt-out toggle: "Hide badges" in settings (still earn them, just don't see them)
+
+### 15.2 Achievement Titles
+
+**Concept:** Short, playful titles that appear next to member names on cards and leaderboards. These rotate based on current performance and seasonal context.
+
+**Weekly Titles (Auto-Assigned):**
+- **Weekly MVP:** Member who organized the highest-voted pick this week
+- **Voting Champion:** Member with longest current voting streak
+- **Fresh Face:** Newest team member (first 2 weeks only)
+
+**Seasonal Titles (Assigned Quarterly, Retained Until Next Season):**
+- **Spring: 🌸 Blossom Scout** - Most picks organized in Q1
+- **Summer: ☀️ Sunshine Chef** - Highest average rating in Q2
+- **Fall: 🍂 Harvest Hero** - Most consecutive votes in Q3
+- **Winter: ❄️ Cozy Curator** - Most unanimous picks in Q4
+
+**Permanent Titles (Unlock Once, Keep Forever):**
+- **🏅 Founding Member:** Joined team in first week of its creation
+- **💯 Century Club:** 100+ total picks organized
+- **🎯 Sharpshooter:** 10+ perfect (unanimous) picks
+
+**Title Display:**
+- Shows below member name in smaller, muted text
+- Max 1 active title per member
+- Priority: Seasonal > Weekly > Permanent
+- Users can select which permanent title to display (if multiple earned)
+
+### 15.3 Team Streak Tracking
+
+**Definition:** Consecutive weeks where at least one pick is organized and voting occurs. Streak breaks if a week is skipped (no organizer or no voting).
+
+**Streak Display:**
+- Status bar shows: "🔥 12 Week Streak"
+- Team selection screen shows current streak next to team name
+- Milestones celebrated: 4 weeks, 10 weeks, 25 weeks, 52 weeks (1 year!)
+
+**Streak Milestones:**
+- **4 Weeks:** "Getting Started" - Team badge unlocked
+- **10 Weeks:** "Committed Crew" - Team badge unlocked
+- **25 Weeks:** "Ritual Masters" - Team badge unlocked
+- **52 Weeks:** "Saga Legends" - Special team badge + confetti animation
+
+**Streak Protection:**
+- Holiday mode pauses streak (doesn't break it)
+- Admins can retroactively mark a week as "planned skip" to preserve streak (within 7 days)
+
+### 15.4 Weekly MVP Recognition
+
+**Selection Logic:**
+```
+FUNCTION selectWeeklyMVP(team_id, week_id):
+    // Get organizer of this week
+    organizer = SELECT organizer_id FROM Week WHERE id = week_id
+    
+    // Get their venue proposal
+    venue = SELECT * FROM VenueProposal 
+            WHERE week_id = week_id 
+            AND proposed_by = organizer
+            ORDER BY vote_count DESC
+            LIMIT 1
+    
+    // MVP = organizer if their venue won with >50% of team votes
+    total_members = COUNT(Membership WHERE team_id = team_id AND is_away = false)
+    vote_percentage = venue.vote_count / total_members
+    
+    IF vote_percentage >= 0.5:
+        RETURN organizer (award "Weekly MVP" title)
+    ELSE:
+        RETURN null (no MVP this week)
+END FUNCTION
+```
+
+**MVP Benefits:**
+- "Weekly MVP" title for the following week
+- Highlighted in weekly summary email
+- Badge progress toward "Crowd Pleaser" and "Legendary Curator"
+
+### 15.5 Scoring Categories
+
+**Member Contribution Score:** Simple metric visible on member profiles
+
+```
+Contribution Score = (Picks Organized × 2) + (Votes Cast × 1) + (Badges Earned × 5)
+
+Example:
+- Alice: (12 picks × 2) + (48 votes × 1) + (3 badges × 5) = 87 points
+- Bob: (8 picks × 2) + (52 votes × 1) + (2 badges × 5) = 78 points
+```
+
+**Purpose:** Celebrate engagement without creating competition. Used only for "Most Active Member" stat, not for rotation or privileges.
+
+**Venue Win Rate:** Percentage of times a venue wins when proposed
+
+```
+Win Rate = (Times Venue Won / Times Venue Proposed) × 100%
+
+Example:
+- "Taco Tuesday": Won 4 out of 5 proposals = 80% win rate
+- "Sushi Palace": Won 2 out of 8 proposals = 25% win rate
+```
+
+**Display:** Shown on venue cards when re-proposed ("This venue has an 80% win rate!")
+
+### 15.6 How Users See and Earn Badges
+
+**Discovery:**
+- Member profile shows all available badges (earned + locked)
+- Locked badges show silhouette + unlock criteria
+- Progress bars for badges in progress (e.g., "7/10 picks organized")
+
+**Earning:**
+- Automatic - no manual claiming required
+- Toast notification when badge unlocked: "🎉 Badge Earned: Culinary Explorer!"
+- Badge appears on member card immediately
+- Team feed posts: "Alice just earned 🍜 Culinary Explorer!"
+
+**Showcase:**
+- Member cards: Up to 3 badges displayed (most prestigious first)
+- Profile view: All badges in grid, sortable by rarity or date earned
+- Team leaderboard: Badges shown next to names
+
+**Engagement Loop:**
+- Users check "next badge" on profile
+- See clear criteria ("Organize 2 more picks to unlock Culinary Explorer")
+- Natural motivation without forced mechanics
+
+---
+
+## 16. Lore & Theming (MVP+)
+
+### 16.1 "Saga" Terminology
+
+**Core Concept:** LunchSaga frames the weekly rotation as a shared adventure. Language shifts from corporate task management to playful quest narrative.
+
+**Terminology Map:**
+
+| Standard Term | Saga Term | Usage Example |
+|---------------|-----------|---------------|
+| Organizer | Quest Giver | "You're this week's Quest Giver!" |
+| Venue Proposal | The Quest | "Propose your quest for the week" |
+| Voting | Council Vote | "The council has voted: Taco Tuesday wins!" |
+| Team | Guild / Fellowship | "Your fellowship: Mobile Team 🚀" |
+| Weekly Rotation | The Saga Continues | "Week 12: The Saga Continues" |
+| Next Picker | Next Hero | "Next Hero: Alice" |
+| Leaderboard | Hall of Fame | "Hall of Fame - Top Quest Givers" |
+
+**Implementation:**
+- Primary UI uses Saga terms
+- Tooltips provide context ("Quest Giver: The member organizing this week's lunch")
+- Settings toggle: "Use standard terminology" for teams who prefer plain language
+
+### 16.2 Weekly Flavor Text
+
+**Auto-Generated Prompts:** When organizer proposes venues, system suggests optional flavor text
+
+**Examples:**
+- "Week 5: A new challenger approaches. What culinary adventure awaits?"
+- "Week 12: The fellowship gathers. Where shall we feast?"
+- "Week 18: Legends speak of a hidden gem nearby. Could this be it?"
+- "Week 23: The saga continues. Choose wisely, brave Quest Giver."
+
+**Customization:**
+- Organizers can edit or replace flavor text
+- Admins can disable auto-flavor text for team
+- Seasonal variations (e.g., winter: "Warm hearth and good company beckon...")
+
+### 16.3 Seasonal Quest Prompts
+
+**Concept:** Light, optional suggestions that encourage venue variety without forcing it.
+
+**Examples:**
+
+**Spring Prompts:**
+- "Seek out fresh flavors this week"
+- "Find a spot with outdoor seating for the Fellowship"
+- "Discover a new place the team hasn't tried"
+
+**Summer Prompts:**
+- "Cool treats on a hot day - ice cream or smoothies?"
+- "A breezy patio could be perfect this week"
+- "Beach-adjacent or waterfront dining adventure"
+
+**Fall Prompts:**
+- "Comfort food season - what's your pick?"
+- "Warm soups and hearty meals await"
+- "Celebrate harvest season with local ingredients"
+
+**Winter Prompts:**
+- "Cozy indoor dining for the cold months"
+- "Hot beverages and warm company"
+- "Festive atmosphere to lift spirits"
+
+**Implementation:**
+- Displayed on venue proposal screen as suggestion, not requirement
+- Easily dismissible ("Not now" button)
+- Rotate weekly within season
+- Admins can write custom prompts
+
+### 16.4 Playful Achievement Names
+
+**Aligned with Saga Theme:**
+
+Instead of generic names, use adventure/food/quest language:
+
+- ✅ "First Quest" not "First Time Organizer"
+- ✅ "Culinary Explorer" not "5 Venues Proposed"
+- ✅ "Legendary Curator" not "High Rating Achiever"
+- ✅ "Devoted Voter" not "10 Consecutive Votes"
+- ✅ "Perfect Pick" not "Unanimous Vote Winner"
+
+**Voice & Tone:**
+- Playful but not childish
+- Adventure-themed but not fantasy-heavy
+- Food-centric when possible
+- Professional enough for workplace use
+
+---
+
+## 17. MVP+ User Stories & Acceptance Criteria
+
+### Epic 7: Gamification & Engagement
+
+#### US-701: Earn First Badge
+**As a** team member  
+**I want to** earn badges for participation and quality  
+**So that** I feel recognized for my contributions
+
+**Acceptance Criteria:**
+- **GIVEN** I complete a badge-earning action (e.g., organize first pick)
+- **WHEN** the system detects badge unlock
+- **THEN** I see a toast notification "🎉 Badge Earned: First Quest!"
+- **AND** the badge appears on my member card
+- **AND** the badge appears in my profile's badge grid
+- **AND** my team feed shows "You earned First Quest" (if feed enabled)
+
+#### US-702: View Badge Progress
+**As a** team member  
+**I want to** see which badges I can earn next  
+**So that** I know what goals to work toward
+
+**Acceptance Criteria:**
+- **GIVEN** I view my profile
+- **WHEN** I navigate to the badges section
+- **THEN** I see all available badges (earned + locked)
+- **AND** locked badges show silhouette + unlock criteria
+- **AND** badges with progress show progress bar (e.g., "7/10 picks organized")
+- **AND** I can filter by earned, locked, or rarity
+
+#### US-703: Weekly MVP Selection
+**As a** team member  
+**I want** the system to automatically recognize the week's best pick  
+**So that** great organizers get acknowledged
+
+**Acceptance Criteria:**
+- **GIVEN** voting closes for a week
+- **WHEN** the organizer's venue won with >50% of team votes
+- **THEN** that organizer is awarded "Weekly MVP" title
+- **AND** the title appears below their name for the following week
+- **AND** they are highlighted in the weekly summary email
+- **AND** the status bar shows "Last week's MVP: [Name]"
+
+#### US-704: Team Streak Tracking
+**As a** team admin  
+**I want** to see our team's consecutive week streak  
+**So that** we can celebrate consistency and ritual commitment
+
+**Acceptance Criteria:**
+- **GIVEN** my team has completed multiple consecutive weeks
+- **WHEN** I view the team dashboard
+- **THEN** I see "🔥 [X] Week Streak" in the status bar
+- **AND** the streak number increments after each completed week
+- **AND** streak milestones trigger celebratory notifications (4, 10, 25, 52 weeks)
+- **AND** holiday mode pauses (not breaks) the streak
+
+### Epic 8: Personalization
+
+#### US-801: Upload Avatar
+**As a** team member  
+**I want to** upload a profile picture or select an avatar  
+**So that** my profile feels personal
+
+**Acceptance Criteria:**
+- **GIVEN** I am viewing my profile
+- **WHEN** I click "Edit Avatar"
+- **THEN** I can upload an image (max 2MB, JPG/PNG)
+- **OR** I can select from emoji/icon library
+- **AND** avatar preview updates immediately
+- **AND** avatar appears on my member card across all teams
+
+#### US-802: Custom Member Title
+**As a** team admin  
+**I want to** assign custom titles to members  
+**So that** we can add personality or inside jokes
+
+**Acceptance Criteria:**
+- **GIVEN** I am a team admin
+- **WHEN** I click a member's edit button
+- **THEN** I see a "Custom Title" field (max 20 characters)
+- **AND** I can enter text (e.g., "Taco Enthusiast," "Coffee Czar")
+- **AND** the title appears below the member's name in muted text
+- **AND** custom titles override achievement titles (user preference)
+
+#### US-803: Team Banner Image
+**As a** team admin  
+**I want to** upload a team banner image  
+**So that** our team page feels unique
+
+**Acceptance Criteria:**
+- **GIVEN** I am a team admin viewing team settings
+- **WHEN** I click "Team Banner"
+- **THEN** I can upload an image (max 5MB, JPG/PNG, 1200x300px recommended)
+- **AND** the banner appears at the top of the team page
+- **AND** banner is cropped/resized to fit without distortion
+- **AND** I can remove the banner to revert to default
+
+### Epic 9: Lore & Theming
+
+#### US-901: Saga Terminology Toggle
+**As a** team member  
+**I want** the app to use playful "saga" language  
+**So that** the experience feels more engaging
+
+**Acceptance Criteria:**
+- **GIVEN** I am using the app
+- **WHEN** I view any team page
+- **THEN** I see Saga terminology by default ("Quest Giver," "Council Vote," etc.)
+- **AND** tooltips explain terms on hover ("Quest Giver: This week's organizer")
+- **AND** in settings, I can toggle to "Standard Terminology" if preferred
+- **AND** the toggle applies to my view only (doesn't affect other users)
+
+#### US-902: Weekly Flavor Text
+**As an** organizer  
+**I want** to add narrative flavor to my venue proposal  
+**So that** the weekly pick feels more fun
+
+**Acceptance Criteria:**
+- **GIVEN** I am proposing a venue as the Quest Giver
+- **WHEN** the proposal dialog opens
+- **THEN** I see an auto-generated flavor text suggestion (e.g., "What culinary adventure awaits?")
+- **AND** I can edit or replace the text (max 100 characters)
+- **AND** I can clear it entirely if I prefer no flavor text
+- **AND** the flavor text appears above the venue options in the voting section
+
+#### US-903: Seasonal Quest Prompts
+**As an** organizer  
+**I want** seasonal suggestions for venue types  
+**So that** I have inspiration when choosing
+
+**Acceptance Criteria:**
+- **GIVEN** I am proposing a venue
+- **WHEN** the dialog opens
+- **THEN** I see a seasonal quest prompt (e.g., "Seek out fresh flavors this week" in spring)
+- **AND** the prompt is dismissible ("Not now" button)
+- **AND** prompts rotate weekly within each season
+- **AND** admins can write custom prompts for the team
+
+### Epic 10: Simple Analytics
+
+#### US-1001: Venue Win Rate
+**As a** team member  
+**I want to** see which venues are most popular  
+**So that** I can make informed choices
+
+**Acceptance Criteria:**
+- **GIVEN** a venue has been proposed multiple times
+- **WHEN** I view venue history or propose it again
+- **THEN** I see its win rate (e.g., "80% win rate - 4/5 times")
+- **AND** win rate is calculated as (times won / times proposed)
+- **AND** only venues with 3+ proposals show win rate (avoid misleading stats)
+
+#### US-1002: Member Contribution Score
+**As a** team member  
+**I want to** see my overall engagement score  
+**So that** I understand my participation level
+
+**Acceptance Criteria:**
+- **GIVEN** I view my profile
+- **WHEN** I navigate to the stats section
+- **THEN** I see my Contribution Score calculated as: (Picks × 2) + (Votes × 1) + (Badges × 5)
+- **AND** I see a breakdown of the score components
+- **AND** I see my rank within the team (e.g., "3rd most active")
+- **AND** the score is purely informational (doesn't affect rotation)
+
+#### US-1003: Weekly Team Summary Email
+**As a** team member  
+**I want** a weekly email summarizing our team's activity  
+**So that** I stay connected even when I don't open the app
+
+**Acceptance Criteria:**
+- **GIVEN** I am a member of an active team
+- **WHEN** the week closes (Sunday evening or Monday morning)
+- **THEN** I receive an email with:
+  - Last week's winning venue and organizer
+  - Weekly MVP (if applicable)
+  - Next week's Quest Giver
+  - Current team streak
+  - Recent badges earned
+  - Link to vote on current pick (if voting active)
+- **AND** I can unsubscribe from these emails in settings
+- **AND** email is mobile-friendly and loads quickly
+
+---
+
+## 18. MVP+ Data Model Extensions
+
+### New Fields on Existing Entities
+
+**User (Extensions):**
+- `avatar_url` (string, nullable): URL to uploaded avatar image
+- `use_saga_terminology` (boolean, default: true): User's terminology preference
+- `badge_notifications_enabled` (boolean, default: true): Show badge toast notifications
+
+**Team (Extensions):**
+- `banner_image_url` (string, nullable): URL to team banner image
+- `current_streak` (integer, default: 0): Consecutive weeks completed
+- `longest_streak` (integer, default: 0): All-time best streak
+- `streak_started_at` (timestamp, nullable): When current streak began
+- `custom_quest_prompts` (JSON, nullable): Admin-defined seasonal prompts
+
+**Membership (Extensions):**
+- `custom_title` (string, nullable, max 20 chars): Admin-assigned title
+- `contribution_score` (integer, default: 0): Cached engagement score
+- `weekly_mvp_count` (integer, default: 0): Times awarded Weekly MVP
+- `longest_vote_streak` (integer, default: 0): Best consecutive voting streak
+
+### New Entities (MVP+)
+
+#### **Badge**
+System-defined badges that members can earn.
+
+**Fields:**
+- `id` (UUID, PK): Unique identifier
+- `name` (string, required): Badge name (e.g., "First Quest")
+- `description` (string, required): How to earn it
+- `icon_emoji` (string, required): Emoji representation (e.g., "🌟")
+- `rarity` (enum: 'common' | 'uncommon' | 'rare' | 'legendary'): Badge tier
+- `unlock_criteria` (JSON, required): Trigger rules
+
+**Example:**
+```json
+{
+  "id": "badge-001",
+  "name": "First Quest",
+  "description": "Organize your first lunch pick",
+  "icon_emoji": "🌟",
+  "rarity": "common",
+  "unlock_criteria": {
+    "type": "picks_organized",
+    "threshold": 1
+  }
+}
+```
+
+#### **MemberBadge**
+Junction table tracking which members earned which badges.
+
+**Fields:**
+- `id` (UUID, PK): Unique identifier
+- `membership_id` (UUID, FK → Membership, required): Who earned it
+- `badge_id` (UUID, FK → Badge, required): Which badge
+- `earned_at` (timestamp): When unlocked
+- `progress` (JSON, nullable): Progress toward multi-step badges
+
+**Relationships:**
+- Many-to-One → Membership
+- Many-to-One → Badge
+
+**Unique Constraints:**
+- `(membership_id, badge_id)` (can only earn each badge once)
+
+#### **TeamAchievement**
+Team-wide achievements (collective milestones).
+
+**Fields:**
+- `id` (UUID, PK): Unique identifier
+- `team_id` (UUID, FK → Team, required): Which team
+- `achievement_type` (enum: 'streak_4' | 'streak_10' | 'streak_25' | 'streak_52'): Milestone
+- `achieved_at` (timestamp): When unlocked
+- `icon_emoji` (string): Display emoji
+
+**Relationships:**
+- Many-to-One → Team
+
+---
+
+## 19. MVP+ Algorithms
+
+### 19.1 Badge Unlock Detection
+
+**Purpose:** Automatically check if member earned a badge after each action.
+
+**Algorithm:**
+```
+FUNCTION checkBadgeUnlocks(membership_id, action_type, action_data):
+    member = SELECT * FROM Membership WHERE id = membership_id
+    team_id = member.team_id
+    
+    // Get all badges this member hasn't earned yet
+    available_badges = SELECT * FROM Badge
+                       WHERE id NOT IN (
+                           SELECT badge_id FROM MemberBadge 
+                           WHERE membership_id = membership_id
+                       )
+    
+    FOR EACH badge IN available_badges:
+        criteria = badge.unlock_criteria
+        
+        SWITCH criteria.type:
+            CASE "picks_organized":
+                pick_count = COUNT(PickerHistory WHERE membership_id = membership_id)
+                IF pick_count >= criteria.threshold:
+                    unlockBadge(membership_id, badge.id)
+            
+            CASE "unanimous_votes":
+                perfect_picks = COUNT(PickerHistory 
+                                WHERE membership_id = membership_id 
+                                AND vote_percentage = 1.0)
+                IF perfect_picks >= criteria.threshold:
+                    unlockBadge(membership_id, badge.id)
+            
+            CASE "consecutive_votes":
+                current_streak = calculateVoteStreak(membership_id)
+                IF current_streak >= criteria.threshold:
+                    unlockBadge(membership_id, badge.id)
+            
+            CASE "average_rating":
+                avg_rating = AVG(PickerHistory.feedback_score 
+                                WHERE membership_id = membership_id)
+                pick_count = COUNT(PickerHistory WHERE membership_id = membership_id)
+                IF avg_rating >= criteria.min_rating 
+                   AND pick_count >= criteria.min_picks:
+                    unlockBadge(membership_id, badge.id)
+    
+END FUNCTION
+
+FUNCTION unlockBadge(membership_id, badge_id):
+    INSERT INTO MemberBadge (membership_id, badge_id, earned_at)
+    VALUES (membership_id, badge_id, NOW())
+    
+    // Send notification
+    sendBadgeNotification(membership_id, badge_id)
+    
+    // Update team feed
+    postToTeamFeed(membership_id, "earned badge", badge_id)
+END FUNCTION
+```
+
+**Trigger Points:**
+- After organizing a pick (week completes)
+- After casting a vote
+- After venue proposal
+- After receiving post-lunch feedback
+
+### 19.2 Team Streak Calculation
+
+**Purpose:** Track consecutive weeks and detect streak milestones.
+
+**Algorithm:**
+```
+FUNCTION updateTeamStreak(team_id, week_id):
+    team = SELECT * FROM Team WHERE id = team_id
+    week = SELECT * FROM Week WHERE id = week_id
+    
+    // Check if week was completed (has winner or was force-closed)
+    IF week.completed_at IS NULL:
+        RETURN // Week not done yet
+    
+    // Check previous week
+    previous_week = SELECT * FROM Week
+                    WHERE team_id = team_id
+                    AND week_number = week.week_number - 1
+                    ORDER BY week_number DESC
+                    LIMIT 1
+    
+    IF previous_week EXISTS AND previous_week.completed_at IS NOT NULL:
+        // Streak continues
+        team.current_streak = team.current_streak + 1
+    ELSE:
+        // Streak starts fresh
+        team.current_streak = 1
+        team.streak_started_at = week.completed_at
+    
+    // Update longest streak if needed
+    IF team.current_streak > team.longest_streak:
+        team.longest_streak = team.current_streak
+    
+    // Check for milestone achievements
+    checkStreakMilestones(team_id, team.current_streak)
+    
+    UPDATE Team SET current_streak, longest_streak, streak_started_at
+    WHERE id = team_id
+END FUNCTION
+
+FUNCTION checkStreakMilestones(team_id, streak_count):
+    milestones = [4, 10, 25, 52]
+    
+    IF streak_count IN milestones:
+        achievement_type = "streak_" + streak_count
+        
+        // Check if not already earned
+        exists = SELECT * FROM TeamAchievement
+                 WHERE team_id = team_id
+                 AND achievement_type = achievement_type
+        
+        IF NOT exists:
+            INSERT INTO TeamAchievement (team_id, achievement_type, achieved_at)
+            VALUES (team_id, achievement_type, NOW())
+            
+            // Celebrate!
+            sendStreakNotification(team_id, streak_count)
+END FUNCTION
+```
+
+**Streak Break Conditions:**
+- Week skipped with no pick organized
+- More than 7 days gap between weeks
+- Admin explicitly breaks streak (rare, for corrections)
+
+**Streak Preservation:**
+- Holiday mode active (pauses, doesn't break)
+- Admin marks week as "planned skip" within 7 days
+
+### 19.3 Weekly Summary Email Generation
+
+**Purpose:** Compile and send engaging weekly digest to all team members.
+
+**Algorithm:**
+```
+FUNCTION generateWeeklySummary(team_id):
+    team = SELECT * FROM Team WHERE id = team_id
+    
+    // Get last completed week
+    last_week = SELECT * FROM Week
+                WHERE team_id = team_id
+                AND completed_at IS NOT NULL
+                ORDER BY completed_at DESC
+                LIMIT 1
+    
+    IF last_week IS NULL:
+        RETURN // No completed weeks yet
+    
+    // Gather summary data
+    summary = {
+        team_name: team.name,
+        team_emoji: team.emoji,
+        week_number: last_week.week_number,
+        
+        // Last week's results
+        organizer: getMemberName(last_week.organizer_id),
+        winning_venue: getVenueName(last_week.winning_venue_id),
+        vote_count: getVoteCount(last_week.id),
+        
+        // Weekly MVP (if applicable)
+        weekly_mvp: getWeeklyMVP(last_week.id),
+        
+        // Next week's info
+        next_organizer: getNextPicker(team_id),
+        current_week: last_week.week_number + 1,
+        
+        // Team stats
+        current_streak: team.current_streak,
+        recent_badges: getRecentBadges(team_id, 7), // Last 7 days
+        
+        // Current voting (if active)
+        active_voting: getCurrentVoting(team_id)
+    }
+    
+    // Generate HTML email
+    email_html = renderTemplate("weekly_summary", summary)
+    
+    // Send to all active members
+    members = SELECT * FROM Membership
+              WHERE team_id = team_id
+              AND is_away = false
+    
+    FOR EACH member IN members:
+        IF member.user_id IS NOT NULL:
+            user = SELECT * FROM User WHERE id = member.user_id
+            sendEmail(user.email, "Weekly Saga Summary - " + team.name, email_html)
+END FUNCTION
+```
+
+**Scheduling:** Run every Monday morning at 9am local time (team timezone inferred from majority of members)
+
+---
+
+## 20. MVP+ Non-Functional Requirements
+
+### Performance (Additional)
+- **Badge Check Time:** <50ms for all badge unlock checks after action
+- **Avatar Upload:** <5 seconds for image processing and CDN upload
+- **Weekly Email Generation:** <2 minutes for batch processing all teams
+- **Team Feed Update:** Real-time (<500ms) when badge earned or MVP selected
+
+### Storage
+- **Avatars:** Max 2MB per image, stored on Cloudflare R2 or Images
+- **Team Banners:** Max 5MB per image, auto-resized to 1200x300px
+- **Badge Icons:** Emoji only (no custom images in MVP+)
+- **Total Storage Growth:** ~10MB per 100 active users (mostly images)
+
+### Moderation & Safety
+- **Avatar Moderation:** Manual review queue for uploaded images (post-MVP+)
+- **Custom Title Filtering:** Block profanity list for custom titles
+- **Flavor Text:** Character limit prevents abuse (100 chars max)
+- **Badge Names:** System-defined only (no user-generated badges)
+
+---
+
+## 21. MVP+ Risks & Mitigations
+
+| Risk | Impact | Likelihood | Mitigation |
+|------|--------|-----------|------------|
+| **Gamification feels forced/corporate** | Medium (user disengagement) | Medium | Use playful saga language, make badges opt-out visible, avoid HR terminology |
+| **Badge inflation (too many, too easy)** | Low (diluted meaning) | Medium | Limit to 8-12 core badges, require meaningful thresholds, test with real teams |
+| **Avatar uploads contain inappropriate content** | High (HR/legal issue) | Low | Start with emoji/icon selector only, add image upload post-launch with moderation queue |
+| **Weekly emails marked as spam** | Medium (reduced engagement) | Low | Clear unsubscribe, valuable content only, send from verified domain, limit to 1/week |
+| **Streak pressure creates stress** | Medium (defeats "zero admin" goal) | Low | Emphasize streak is celebratory not mandatory, holiday mode preserves streaks, no negative consequences for breaks |
+| **Seasonal prompts feel repetitive** | Low (minor annoyance) | Medium | 20+ prompts per season, rotate weekly, easily dismissible, admin custom prompts |
+| **Custom titles used inappropriately** | Medium (professionalism concern) | Low | Admin-only assignment, profanity filter, max 20 chars, examples provided |
+
+---
+
+## 22. MVP+ Success Criteria
+
+**Launch Criteria (Ready to Ship):**
+- All 8 core badges functional and tested
+- Badge unlock detection working for all trigger types
+- Avatar upload/selector operational
+- Weekly summary email sends successfully
+- Team streak tracking accurate
+- Saga terminology applied throughout with toggle functional
+- No P0/P1 bugs in gamification features
+
+**Engagement Metrics (30 days post-launch):**
+- 40%+ users earn at least one badge
+- 60%+ users customize avatar
+- 50%+ weekly email open rate
+- 25%+ teams maintain 4+ week streak
+- 3+ badge/achievement views per user per month
+
+**Quality Metrics:**
+- <1% badge unlock errors (false positives/negatives)
+- <5% email bounce rate
+- 90%+ users keep saga terminology enabled
+- NPS ≥ 50 (up from MVP's ≥40 target)
+
+**Retention Impact:**
+- 7-day retention: 75% (up from 70% MVP target)
+- 30-day retention: 65% (up from 60% MVP target)
+- 90-day retention: 55% (up from 50% estimated)
+
+---
+
+**END OF MVP+ SPECIFICATION**
 
 ---
 
