@@ -81,11 +81,44 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return str.replace(/[^a-zA-Z0-9_-]/g, '')
   }
 
+  // Whitelist of valid CSS color keywords
+  const VALID_COLOR_NAMES = new Set([
+    'black', 'white', 'red', 'green', 'blue', 'yellow', 'cyan', 'magenta',
+    'gray', 'grey', 'orange', 'purple', 'pink', 'brown', 'transparent',
+    'currentcolor', 'inherit', 'initial', 'unset'
+  ])
+
   // Sanitize CSS color value to prevent injection
   const sanitizeCSSColor = (color: string): string => {
-    // Allow valid CSS color formats
-    const colorPattern = /^(#[0-9a-fA-F]{3,8}|rgb\([^)]+\)|rgba\([^)]+\)|hsl\([^)]+\)|hsla\([^)]+\)|oklch\([^)]+\)|[a-zA-Z]+)$/
-    return colorPattern.test(color) ? color : ''
+    // Trim whitespace
+    color = color.trim().toLowerCase()
+    
+    // Check for hex colors
+    if (/^#[0-9a-f]{3}$|^#[0-9a-f]{6}$|^#[0-9a-f]{8}$/.test(color)) {
+      return color
+    }
+    
+    // Check for rgb/rgba with strict numeric pattern
+    if (/^rgba?\(\s*[0-9]{1,3}\s*,\s*[0-9]{1,3}\s*,\s*[0-9]{1,3}\s*(,\s*[0-9.]+\s*)?\)$/.test(color)) {
+      return color
+    }
+    
+    // Check for hsl/hsla with strict numeric pattern
+    if (/^hsla?\(\s*[0-9]{1,3}\s*,\s*[0-9]{1,3}%\s*,\s*[0-9]{1,3}%\s*(,\s*[0-9.]+\s*)?\)$/.test(color)) {
+      return color
+    }
+    
+    // Check for oklch with strict numeric pattern
+    if (/^oklch\(\s*[0-9.]+\s+[0-9.]+\s+[0-9.]+\s*\)$/.test(color)) {
+      return color
+    }
+    
+    // Check against whitelist for named colors
+    if (VALID_COLOR_NAMES.has(color)) {
+      return color
+    }
+    
+    return ''
   }
 
   const sanitizedId = sanitizeCSSIdentifier(id)
