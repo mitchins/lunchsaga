@@ -1,10 +1,18 @@
 function generateSecureCode(length: number = 6): string {
-  const array = new Uint8Array(length)
+  const array = new Uint8Array(Math.ceil(length * 1.5)) // Generate extra bytes to ensure we get enough characters
   crypto.getRandomValues(array)
-  return Array.from(array, byte => byte.toString(36).padStart(2, '0'))
+  const base36String = Array.from(array, byte => byte.toString(36))
     .join('')
+    .replace(/[^a-z0-9]/g, '') // Remove any non-alphanumeric characters
     .substring(0, length)
     .toUpperCase()
+  
+  // If we didn't get enough characters, recursively generate more
+  if (base36String.length < length) {
+    return (base36String + generateSecureCode(length - base36String.length)).substring(0, length)
+  }
+  
+  return base36String
 }
 
 export async function sendMagicLink(email: string): Promise<boolean> {
