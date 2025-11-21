@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate, Navigate, useParams } from 'react-router-dom'
 import { User, Team, TeamMember } from '@/lib/types'
 import { getNextOrganizer, generateId } from '@/lib/helpers'
 import { LoginScreen } from '@/screens/LoginScreen'
@@ -25,7 +25,7 @@ import { toast } from 'sonner'
 function AppRouter() {
   const navigate = useNavigate()
   const [user, setUser] = useState<User | null>(null)
-  const [teams] = useState<Team[]>(mockTeams)
+  const [teams, setTeams] = useState<Team[]>(mockTeams)
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
   const [members] = useState<TeamMember[]>(mockMembers)
   const [currentPeriod, setCurrentPeriod] = useState(mockCurrentPeriod)
@@ -48,8 +48,9 @@ function AppRouter() {
   }
 
   const handleCreateTeam = (team: Team) => {
-    toast.success(`${team.emoji} ${team.name} created!`)
+    setTeams((prevTeams) => [...prevTeams, team])
     setSelectedTeamId(team.id)
+    toast.success(`${team.emoji} ${team.name} created!`)
     navigate('/dashboard')
   }
 
@@ -105,6 +106,24 @@ function AppRouter() {
   const handleStartWeek = () => {
     toast.success('Week started!')
     navigate('/vote')
+  }
+
+  const ProfileRoute = () => {
+    const { memberId } = useParams<{ memberId: string }>()
+    const member = teamMembers.find((m) => m.id === memberId)
+    
+    if (!member) {
+      return <Navigate to="/dashboard" replace />
+    }
+
+    return (
+      <ProfileScreen
+        member={member}
+        badges={mockBadges}
+        userBadges={mockUserBadges}
+        onBack={handleBack}
+      />
+    )
   }
 
   if (!user) {
@@ -175,21 +194,7 @@ function AppRouter() {
           />
         }
       />
-      <Route
-        path="/profile/:memberId"
-        element={
-          teamMembers.length > 0 ? (
-            <ProfileScreen
-              member={teamMembers[0]} // Mock: would use memberId from route params
-              badges={mockBadges}
-              userBadges={mockUserBadges}
-              onBack={handleBack}
-            />
-          ) : (
-            <Navigate to="/dashboard" replace />
-          )
-        }
-      />
+      <Route path="/profile/:memberId" element={<ProfileRoute />} />
       <Route
         path="/settings"
         element={
