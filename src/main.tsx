@@ -1,6 +1,5 @@
 import { createRoot } from 'react-dom/client'
 import { ErrorBoundary } from "react-error-boundary";
-import "@github/spark/spark"
 
 import App from './App.tsx'
 import { ErrorFallback } from './ErrorFallback.tsx'
@@ -10,9 +9,18 @@ import "./main.css"
 import "./styles/theme.css"
 import "./index.css"
 
-createRoot(document.getElementById('root')!).render(
-  <ErrorBoundary FallbackComponent={ErrorFallback}>
-    <App />
-    <Toaster />
-   </ErrorBoundary>
-)
+async function enableMocking() {
+  if (import.meta.env.DEV) {
+    const { startWorker } = await import('./mocks/browser')
+    return startWorker()
+  }
+}
+
+enableMocking().then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <App />
+      <Toaster />
+    </ErrorBoundary>
+  )
+})

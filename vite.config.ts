@@ -1,9 +1,7 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
-import { defineConfig, PluginOption } from "vite";
+import { defineConfig } from "vite";
 
-import sparkPlugin from "@github/spark/spark-vite-plugin";
-import createIconImportProxy from "@github/spark/vitePhosphorIconProxyPlugin";
 import { resolve } from 'path'
 import { configDefaults } from 'vitest/config'
 
@@ -14,9 +12,6 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    // DO NOT REMOVE
-    createIconImportProxy() as PluginOption,
-    sparkPlugin() as PluginOption,
   ],
   resolve: {
     alias: {
@@ -24,8 +19,8 @@ export default defineConfig({
     }
   },
   server: {
-    port: 5000,
-    strictPort: false, // Allow fallback if port is in use
+    port: 5173, // Vite default, avoids macOS system services
+    strictPort: false, // Allow fallback to other ports if busy
   },
   test: {
     globals: true,
