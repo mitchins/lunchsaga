@@ -25,6 +25,7 @@ export interface TeamMember {
   reputationScore: number
   totalVenuesProposed: number
   totalWins: number
+  isAway?: boolean
   joinedAt: number
 }
 

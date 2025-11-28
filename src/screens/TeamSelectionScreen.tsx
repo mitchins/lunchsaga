@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Team, User } from '@/lib/types'
 import { generateId, TEAM_EMOJIS, TEAM_COLORS } from '@/lib/helpers'
-import { generateInviteCode } from '@/lib/auth'
 import { Plus, SignIn, Users as UsersIcon } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -39,7 +38,7 @@ export function TeamSelectionScreen({ user, teams, onSelectTeam, onCreateTeam, o
       color: selectedColor.value,
       ownerId: user.id,
       createdAt: Date.now(),
-      inviteCode: generateInviteCode(),
+      inviteCode: '', // API will generate the real invite code
     }
 
     onCreateTeam(newTeam)

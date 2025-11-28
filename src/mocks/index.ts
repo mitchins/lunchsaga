@@ -1,5 +1,2 @@
-export * from './user'
-export * from './teams'
-export * from './members'
+// Only badges are still used - other mock data removed
 export * from './badges'
-export * from './periods'

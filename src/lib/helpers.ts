@@ -36,14 +36,14 @@ export const TEAM_EMOJIS = [
 ]
 
 export const TEAM_COLORS = [
-  { name: 'Ocean', value: 'oklch(0.65 0.15 220)' },
-  { name: 'Sunset', value: 'oklch(0.70 0.18 30)' },
-  { name: 'Forest', value: 'oklch(0.60 0.15 145)' },
-  { name: 'Lavender', value: 'oklch(0.68 0.14 290)' },
-  { name: 'Cherry', value: 'oklch(0.62 0.20 15)' },
-  { name: 'Mint', value: 'oklch(0.72 0.12 165)' },
-  { name: 'Amber', value: 'oklch(0.75 0.16 75)' },
-  { name: 'Plum', value: 'oklch(0.58 0.18 310)' },
+  { name: 'Ocean', value: '#3B82F6' },
+  { name: 'Sunset', value: '#F97316' },
+  { name: 'Forest', value: '#22C55E' },
+  { name: 'Lavender', value: '#A855F7' },
+  { name: 'Cherry', value: '#EF4444' },
+  { name: 'Mint', value: '#14B8A6' },
+  { name: 'Amber', value: '#EAB308' },
+  { name: 'Plum', value: '#EC4899' },
 ]
 
 export function getRandomTeamEmoji(): string {

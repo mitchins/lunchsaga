@@ -182,11 +182,19 @@ export const teamsAPI = {
    * List all teams the user is a member of
    */
   list: () => fetchAPI<{ teams: Team[] }>('/teams'),
+  // Alias for App.tsx compatibility
+  getTeams: () => fetchAPI<{ teams: Team[] }>('/teams'),
 
   /**
    * Create a new team
    */
   create: (data: { name: string; emoji?: string; color?: string }) =>
+    fetchAPI<{ team: Team }>('/teams', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  // Alias for App.tsx compatibility
+  createTeam: (data: { name: string; emoji?: string; color?: string }) =>
     fetchAPI<{ team: Team }>('/teams', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -214,6 +222,12 @@ export const teamsAPI = {
       method: 'POST',
       body: JSON.stringify({ inviteCode }),
     }),
+  // Alias for App.tsx compatibility
+  joinTeam: (inviteCode: string) =>
+    fetchAPI<{ team: Team; alreadyMember: boolean }>('/teams/join', {
+      method: 'POST',
+      body: JSON.stringify({ inviteCode }),
+    }),
 
   /**
    * Leave a team
@@ -228,6 +242,9 @@ export const teamsAPI = {
    */
   getMembers: (teamId: string) =>
     fetchAPI<{ members: TeamMember[] }>(`/teams/${teamId}/members`),
+  // Alias for App.tsx compatibility
+  getTeamMembers: (teamId: string) =>
+    fetchAPI<{ members: TeamMember[] }>(`/teams/${teamId}/members`),
 
   /**
    * Get next organizer
@@ -241,6 +258,30 @@ export const teamsAPI = {
   regenerateInviteCode: (teamId: string) =>
     fetchAPI<{ inviteCode: string }>(`/teams/${teamId}/regenerate-invite`, {
       method: 'POST',
+    }),
+
+  // Aliases for App.tsx compatibility
+  updateTeam: (teamId: string, updates: Partial<Pick<Team, 'name' | 'emoji' | 'color' | 'isHolidayMode'>>) =>
+    fetchAPI<{ team: Team }>(`/teams/${teamId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    }),
+
+  addMember: (teamId: string, data: { name: string }) =>
+    fetchAPI<{ member: TeamMember }>(`/members/teams/${teamId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ email: data.name }), // API expects email, frontend sends name
+    }),
+
+  removeMember: (teamId: string, memberId: string) =>
+    fetchAPI<{ success: boolean }>(`/members/teams/${teamId}/members/${memberId}`, {
+      method: 'DELETE',
+    }),
+
+  updateMember: (teamId: string, memberId: string, updates: { isAway?: boolean }) =>
+    fetchAPI<{ member: TeamMember }>(`/members/teams/${teamId}/members/${memberId}/away`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
     }),
 }
 
@@ -286,6 +327,12 @@ export const votingAPI = {
       method: 'POST',
       body: JSON.stringify({ venueId }),
     }),
+  // Alias for App.tsx compatibility - returns period for UI update
+  castVote: (periodId: string, venueId: string) =>
+    fetchAPI<{ period: LunchPeriod }>(`/voting/periods/${periodId}/vote`, {
+      method: 'POST',
+      body: JSON.stringify({ venueId }),
+    }),
 
   /**
    * Complete voting and determine winner (organizer only)
@@ -300,6 +347,9 @@ export const votingAPI = {
    */
   getHistory: (teamId: string, limit = 10, offset = 0) =>
     fetchAPI<{ history: LunchPeriod[] }>(`/voting/teams/${teamId}/history?limit=${limit}&offset=${offset}`),
+  // Alias for App.tsx compatibility
+  getPeriodHistory: (teamId: string) =>
+    fetchAPI<{ periods: LunchPeriod[] }>(`/voting/teams/${teamId}/history?limit=10&offset=0`),
 }
 
 // Members API

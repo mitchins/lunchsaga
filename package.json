@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "lsof -ti:5173,3757 | xargs kill -9 2>/dev/null || true && rm -rf python_modules && concurrently \"uv run pywrangler dev --port 3757 --local\" \"npx vite\" --names \"API,WEB\" --prefix-colors \"blue,green\" --kill-others-on-fail",
-    "dev:fresh": "lsof -ti:5173,3757 | xargs kill -9 2>/dev/null || true && rm -rf python_modules && concurrently \"uv run pywrangler dev --port 3757 --local\" \"npx vite\" \"sleep 8 && uv run python api/scripts/rebuild_test_data.py\" --names \"API,WEB,REBUILD\" --prefix-colors \"blue,green,yellow\" --kill-others-on-fail",
-    "dev:api": "rm -rf python_modules && uv run pywrangler dev --port 3757 --local",
-    "dev:web": "npx vite",
+    "dev": "concurrently --kill-others-on-fail --names \"API,WEB\" --prefix-colors \"blue,green\" \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:fresh": "concurrently --kill-others-on-fail --names \"API,WEB,SEED\" --prefix-colors \"blue,green,yellow\" \"npm run dev:api\" \"npm run dev:web\" \"sleep 5 && npm run db:rebuild\"",
+    "dev:api": "uv run pywrangler dev --port 3757 --local",
+    "dev:web": "vite",
     "kill": "lsof -ti:5173,3757 | xargs kill -9 2>/dev/null || true",
     "db:rebuild": "uv run python api/scripts/rebuild_test_data.py",
     "db:migrate": "curl -X POST http://localhost:3757/api/_migrate",
@@ -107,7 +107,6 @@
     "globals": "^16.0.0",
     "happy-dom": "^20.0.10",
     "jsdom": "^27.2.0",
-    "msw": "^2.12.3",
     "tailwindcss": "^4.1.11",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.38.0",
@@ -117,11 +116,6 @@
   "workspaces": {
     "packages": [
       "packages/*"
-    ]
-  },
-  "msw": {
-    "workerDirectory": [
-      "public"
     ]
   }
 }

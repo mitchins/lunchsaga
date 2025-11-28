@@ -3,9 +3,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { sendMagicLink, verifyMagicLink } from '@/lib/auth'
+import { authAPI } from '@/services/api'
 import { User } from '@/lib/types'
-import { generateId } from '@/lib/helpers'
 import { EnvelopeSimple, Check } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { SagaBrand } from '@/components/SagaBrand'
@@ -25,12 +24,11 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
     setIsLoading(true)
     
     try {
-      const success = await sendMagicLink(email)
-      if (success) {
-        setStep('code')
-        toast.success('Check your console for the magic link code! 🪄')
-      }
+      await authAPI.sendMagicLink(email)
+      setStep('code')
+      toast.success('Check your console for the magic link code! 🪄')
     } catch (error) {
+      console.error('Failed to send magic link:', error)
       toast.error('Failed to send magic link')
     } finally {
       setIsLoading(false)
@@ -42,22 +40,20 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
     setIsLoading(true)
     
     try {
-      const verified = await verifyMagicLink(email, code.toUpperCase())
-      if (verified) {
-        const user: User = {
-          id: generateId(),
-          email,
-          name: email.split('@')[0],
-          createdAt: Date.now(),
-        }
-        onLogin(user)
-        toast.success('Welcome to the saga! 🎉')
-      } else {
-        toast.error('Invalid code. Please try again.')
-        setCode('')
+      const { user: apiUser } = await authAPI.verify(email, code.toUpperCase())
+      const user: User = {
+        id: apiUser.id,
+        email: apiUser.email,
+        name: apiUser.name,
+        avatar: apiUser.avatar || undefined,
+        createdAt: Date.now(),
       }
+      onLogin(user)
+      toast.success('Welcome to the saga! 🎉')
     } catch (error) {
-      toast.error('Verification failed')
+      console.error('Verification failed:', error)
+      toast.error('Invalid code. Please try again.')
+      setCode('')
     } finally {
       setIsLoading(false)
     }
@@ -115,7 +111,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
                     className="text-center text-lg tracking-wider"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Check your browser console for the code (demo mode)
+                    Dev mode: use code <span className="font-mono font-bold">000000</span>
                   </p>
                 </div>
                 <div className="space-y-2">

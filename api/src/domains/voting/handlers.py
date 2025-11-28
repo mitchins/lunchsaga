@@ -282,8 +282,8 @@ async def get_period_history(request):
         return not_found("Team not found or not a member")
 
     # Parse pagination params
-    limit = int(request.query_param("limit", "10"))
-    offset = int(request.query_param("offset", "0"))
+    limit = request.query_int("limit", 10)
+    offset = request.query_int("offset", 0)
 
     limit = min(max(limit, 1), 50)  # Clamp between 1 and 50
     offset = max(offset, 0)

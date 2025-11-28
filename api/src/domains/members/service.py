@@ -47,10 +47,15 @@ class MembersService:
         if not team or team.owner_id != adder_user_id:
             return None
 
-        # Find user by email
+        # Find user by email, or create a placeholder user
         user = await User.objects.filter(db, email=email.lower()).first()
         if not user:
-            return {"error": "User not found"}
+            # Auto-create user with email as name (they'll update on first login)
+            user = await User.objects.create(
+                db,
+                email=email.lower(),
+                name=email.split("@")[0],  # Use email prefix as default name
+            )
 
         # Check if already a member
         existing = await TeamMember.objects.filter(
