@@ -10,7 +10,9 @@ import "./styles/theme.css"
 import "./index.css"
 
 async function enableMocking() {
-  if (import.meta.env.DEV) {
+  // MSW mocking disabled - using real API backend
+  // To re-enable mocks, set VITE_USE_MOCKS=true in .env or environment
+  if (import.meta.env.VITE_USE_MOCKS === 'true') {
     const { startWorker } = await import('./mocks/browser')
     return startWorker()
   }

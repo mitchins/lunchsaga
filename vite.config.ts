@@ -19,8 +19,17 @@ export default defineConfig({
     }
   },
   server: {
+    host: '127.0.0.1', // Bind to IPv4 localhost for curl compatibility
     port: 5173, // Vite default, avoids macOS system services
     strictPort: false, // Allow fallback to other ports if busy
+    proxy: {
+      // Proxy /api requests to pywrangler dev server
+      '/api': {
+        target: 'http://localhost:3757',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   test: {
     globals: true,

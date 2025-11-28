@@ -39,3 +39,15 @@ playwright-report/
 playwright/.cache/
 coverage/
 *.tmp
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Cloudflare Workers
+.wrangler/
+
+# Temp scripts
+start-dev.sh

@@ -1,0 +1,32 @@
+# LunchSaga API - Cloudflare Python Worker Configuration
+# Run from project root: uv run pywrangler dev --port 3757
+
+name = "lunchsaga-api"
+main = "api/src/index.py"
+compatibility_date = "2024-03-20"
+compatibility_flags = ["python_workers"]
+
+[vars]
+ENVIRONMENT = "development"
+DEV_OTP_CODE = "000000"  # Dev bypass for magic link verification
+
+[[d1_databases]]
+binding = "DB"
+database_name = "lunchsaga-db"
+database_id = "local"  # Replace with actual ID for production
+
+# KV for session caching (optional)
+# [[kv_namespaces]]
+# binding = "SESSIONS"
+# id = "your-kv-id"
+
+# [observability]
+# enabled = true
+
+# Production environment overrides
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+# Staging environment for testing
+[env.staging]
+vars = { ENVIRONMENT = "staging", DEV_OTP_CODE = "000000" }

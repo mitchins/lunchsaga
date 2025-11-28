@@ -1,11 +1,18 @@
 {
-  "name": "spark-template",
+  "name": "lunchsaga",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "kill": "fuser -k 5173/tcp",
+    "dev": "lsof -ti:5173,3757 | xargs kill -9 2>/dev/null || true && rm -rf python_modules && concurrently \"uv run pywrangler dev --port 3757 --local\" \"npx vite\" --names \"API,WEB\" --prefix-colors \"blue,green\" --kill-others-on-fail",
+    "dev:fresh": "lsof -ti:5173,3757 | xargs kill -9 2>/dev/null || true && rm -rf python_modules && concurrently \"uv run pywrangler dev --port 3757 --local\" \"npx vite\" \"sleep 8 && uv run python api/scripts/rebuild_test_data.py\" --names \"API,WEB,REBUILD\" --prefix-colors \"blue,green,yellow\" --kill-others-on-fail",
+    "dev:api": "rm -rf python_modules && uv run pywrangler dev --port 3757 --local",
+    "dev:web": "npx vite",
+    "kill": "lsof -ti:5173,3757 | xargs kill -9 2>/dev/null || true",
+    "db:rebuild": "uv run python api/scripts/rebuild_test_data.py",
+    "db:migrate": "curl -X POST http://localhost:3757/api/_migrate",
+    "db:reset": "curl -X POST http://localhost:3757/api/_reset",
+    "test:api": "uv run pytest api/tests/ -v",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "optimize": "vite optimize",
@@ -77,6 +84,7 @@
     "tw-animate-css": "^1.2.4",
     "uuid": "^11.1.0",
     "vaul": "^1.1.2",
+    "wrangler": "^4.50.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -92,6 +100,7 @@
     "@vitejs/plugin-react": "^4.7.0",
     "@vitejs/plugin-react-swc": "^3.10.1",
     "@vitest/coverage-v8": "^2.1.9",
+    "concurrently": "^9.2.1",
     "eslint": "^9.28.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
