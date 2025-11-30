@@ -1,11 +1,16 @@
-import { LunchPeriod, TeamMember } from '@/lib/types'
+import { useState } from 'react'
+import { LunchPeriod, TeamMember, VenueOption } from '@/lib/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { VoteButtons } from '@/components/VoteButtons'
 import { EmptyState } from '@/components/EmptyState'
-import { CalendarBlank } from '@phosphor-icons/react'
+import { CalendarBlank, Plus, MapPin, Check } from '@phosphor-icons/react'
 import { Progress } from '@/components/ui/progress'
+import { Badge } from '@/components/ui/badge'
 
 interface VotingScreenProps {
   period: LunchPeriod | null
@@ -16,6 +21,8 @@ interface VotingScreenProps {
   onVote: (venueId: string) => void
   onComplete: () => void
   onStartWeek: () => void
+  onProposeVenue?: (name: string, description: string) => Promise<void>
+  onStartVoting?: () => Promise<void>
 }
 
 export function VotingScreen({
@@ -27,7 +34,12 @@ export function VotingScreen({
   onVote,
   onComplete,
   onStartWeek,
+  onProposeVenue,
+  onStartVoting,
 }: VotingScreenProps) {
+  const [venueName, setVenueName] = useState('')
+  const [venueDescription, setVenueDescription] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   if (!period) {
     return (
       <div className="min-h-screen bg-background">

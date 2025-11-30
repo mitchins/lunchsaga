@@ -22,7 +22,8 @@ interface MemberCardProps {
 
 export function MemberCard({ member, isNextOrganizer, onRemove, onToggleAway, showRemove = true }: MemberCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
-  const [isAway, setIsAway] = useState(false)
+  // Use member.isAway from props as source of truth
+  const isAway = member.isAway ?? false
 
   const initials = member.name
     .split(' ')
@@ -34,7 +35,6 @@ export function MemberCard({ member, isNextOrganizer, onRemove, onToggleAway, sh
   const achievementTitle = getAchievementTitle(member)
 
   const handleToggleAway = (checked: boolean) => {
-    setIsAway(checked)
     onToggleAway?.(member.id, checked)
   }
 

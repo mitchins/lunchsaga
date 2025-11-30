@@ -12,7 +12,9 @@
     "db:rebuild": "uv run python api/scripts/rebuild_test_data.py",
     "db:migrate": "curl -X POST http://localhost:3757/api/_migrate",
     "db:reset": "curl -X POST http://localhost:3757/api/_reset",
+    "test": "vitest run --coverage",
     "test:api": "uv run pytest api/tests/ -v",
+    "test:all": "npm run test && npm run test:api",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "optimize": "vite optimize",
@@ -20,8 +22,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug",
-    "test": "vitest run --coverage"
+    "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

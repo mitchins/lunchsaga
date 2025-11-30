@@ -150,8 +150,8 @@ describe('getRandomTeamColor', () => {
     expect(colorValues).toContain(color);
   });
 
-  it('returns an oklch color string', () => {
+  it('returns a hex color string', () => {
     const color = getRandomTeamColor();
-    expect(color).toMatch(/oklch\(/);
+    expect(color).toMatch(/^#[A-Fa-f0-9]{6}$/);
   });
 });

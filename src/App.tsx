@@ -17,6 +17,7 @@ import {
   authAPI,
   teamsAPI,
   votingAPI,
+  membersAPI,
   getToken,
   clearToken,
   type TeamMember as APITeamMember,
@@ -46,6 +47,7 @@ function transformMember(m: APITeamMember): TeamMember {
     reputationScore: m.reputationScore,
     totalVenuesProposed: m.totalVenuesProposed,
     totalWins: m.totalWins,
+    isAway: m.isAway,
     joinedAt: m.joinedAt,
   }
 }
@@ -255,6 +257,15 @@ function AppRouter() {
     }
   }
 
+  const handleUpdateMemberName = async (memberId: string, name: string) => {
+    if (!selectedTeamId) return
+    
+    const { member } = await membersAPI.updateName(selectedTeamId, memberId, name)
+    setMembers((prev) =>
+      prev.map((m) => (m.id === memberId ? transformMember(member) : m))
+    )
+  }
+
   const handleRemoveMember = async (id: string) => {
     if (!selectedTeamId) return
     
@@ -343,6 +354,40 @@ function AppRouter() {
     }
   }
 
+  const handleProposeVenue = async (name: string, description: string) => {
+    if (!currentPeriod) return
+    
+    try {
+      await votingAPI.proposeVenue(currentPeriod.id, { name, description })
+      // Reload the period to get updated venue list
+      const { period } = await votingAPI.getCurrentPeriod(selectedTeamId!)
+      if (period) {
+        setCurrentPeriod(transformPeriod(period))
+      }
+      toast.success('Venue proposed! 🍽️')
+    } catch (error) {
+      console.error('Failed to propose venue:', error)
+      toast.error('Failed to propose venue')
+    }
+  }
+
+  const handleStartVoting = async () => {
+    if (!currentPeriod) return
+    
+    try {
+      await votingAPI.startVoting(currentPeriod.id)
+      // Reload the period to get updated status
+      const { period } = await votingAPI.getCurrentPeriod(selectedTeamId!)
+      if (period) {
+        setCurrentPeriod(transformPeriod(period))
+      }
+      toast.success('Voting has begun! 🗳️')
+    } catch (error) {
+      console.error('Failed to start voting:', error)
+      toast.error('Failed to start voting')
+    }
+  }
+
   // Show loading while checking auth
   if (isLoading || !authChecked) {
     return <LoadingScreen />
@@ -352,6 +397,9 @@ function AppRouter() {
     return <LoginScreen onLogin={handleLogin} />
   }
 
+  // Find the current user's member record in the selected team
+  const currentUserMember = teamMembers.find((m) => m.userId === user.id)
+
   const ProfileRoute = () => {
     const { memberId } = useParams<{ memberId: string }>()
     const member = teamMembers.find((m) => m.id === memberId)
@@ -360,12 +408,17 @@ function AppRouter() {
       return <Navigate to="/dashboard" replace />
     }
 
+    const isOwnProfile = member.userId === user?.id
+
     return (
       <ProfileScreen
         member={member}
         badges={mockBadges}
         userBadges={mockUserBadges}
+        isOwnProfile={isOwnProfile}
         onBack={handleBack}
+        onUpdateName={isOwnProfile ? (name) => handleUpdateMemberName(member.id, name) : undefined}
+        onToggleAway={isOwnProfile && selectedTeamId ? (isAway) => handleToggleMemberAway(member.id, isAway).then(() => {}) : undefined}
       />
     )
   }
@@ -393,6 +446,7 @@ function AppRouter() {
               team={selectedTeam}
               teams={teams}
               members={teamMembers}
+              currentUserMemberId={currentUserMember?.id}
               nextOrganizer={nextOrganizer}
               isHolidayMode={isHolidayMode}
               onBack={() => navigate('/teams')}
@@ -403,6 +457,7 @@ function AppRouter() {
               onToggleMemberAway={handleToggleMemberAway}
               onNavigateToVote={() => navigate('/vote')}
               onNavigateToHistory={() => navigate('/summary')}
+              onNavigateToProfile={(memberId) => navigate(`/profile/${memberId}`)}
             />
           ) : (
             <Navigate to="/teams" replace />
@@ -421,6 +476,8 @@ function AppRouter() {
             onVote={handleVote}
             onComplete={handleCompletePeriod}
             onStartWeek={handleStartWeek}
+            onProposeVenue={handleProposeVenue}
+            onStartVoting={handleStartVoting}
           />
         }
       />

@@ -11,12 +11,13 @@ import { MemberCard } from '@/components/MemberCard'
 import { AddMemberDialog } from '@/components/AddMemberDialog'
 import { Leaderboard } from '@/components/Leaderboard'
 import { EmptyState } from '@/components/EmptyState'
-import { Users, MapPin, Clock } from '@phosphor-icons/react'
+import { Users, MapPin, Clock, UserCircle } from '@phosphor-icons/react'
 
 interface TeamDashboardScreenProps {
   team: Team
   teams: Team[]
   members: TeamMember[]
+  currentUserMemberId?: string
   nextOrganizer: TeamMember | null
   isHolidayMode: boolean
   onBack: () => void
@@ -27,12 +28,14 @@ interface TeamDashboardScreenProps {
   onToggleMemberAway: (memberId: string, isAway: boolean) => void
   onNavigateToVote: () => void
   onNavigateToHistory: () => void
+  onNavigateToProfile?: (memberId: string) => void
 }
 
 export function TeamDashboardScreen({
   team,
   teams,
   members,
+  currentUserMemberId,
   nextOrganizer,
   isHolidayMode,
   onBack,
@@ -43,6 +46,7 @@ export function TeamDashboardScreen({
   onToggleMemberAway,
   onNavigateToVote,
   onNavigateToHistory,
+  onNavigateToProfile,
 }: TeamDashboardScreenProps) {
   const [activeTab, setActiveTab] = useState<'roster' | 'vote' | 'history'>('roster')
   const averagePoints =
@@ -55,7 +59,22 @@ export function TeamDashboardScreen({
           title={`${team.emoji} ${team.name}`}
           subtitle={`${members.length} ${members.length === 1 ? 'member' : 'members'}`}
           onBack={onBack}
-          actions={<TeamSwitcher teams={teams} currentTeamId={team.id} onTeamChange={onTeamSwitch} />}
+          actions={
+            <div className="flex items-center gap-2">
+              {currentUserMemberId && onNavigateToProfile && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2"
+                  onClick={() => onNavigateToProfile(currentUserMemberId)}
+                >
+                  <UserCircle size={16} />
+                  My Profile
+                </Button>
+              )}
+              <TeamSwitcher teams={teams} currentTeamId={team.id} onTeamChange={onTeamSwitch} />
+            </div>
+          }
         />
 
         <div className="flex items-center justify-between mb-6 p-4 bg-card rounded-lg border">

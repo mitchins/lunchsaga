@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { TeamMember } from '@/lib/types'
 import { Badge as BadgeType, UserBadge } from '@/mocks/badges'
 import { ScreenHeader } from '@/components/ScreenHeader'
@@ -5,17 +6,38 @@ import { BadgeIcon } from '@/components/BadgeIcon'
 import { TitleTag } from '@/components/TitleTag'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { getAchievementTitle } from '@/lib/helpers'
 import { Separator } from '@/components/ui/separator'
+import { PencilSimple, Check, X, AirplaneTilt } from '@phosphor-icons/react'
+import { toast } from 'sonner'
 
 interface ProfileScreenProps {
   member: TeamMember
   badges: BadgeType[]
   userBadges: UserBadge[]
+  isOwnProfile?: boolean
   onBack: () => void
+  onUpdateName?: (name: string) => Promise<void>
+  onToggleAway?: (isAway: boolean) => Promise<void>
 }
 
-export function ProfileScreen({ member, badges, userBadges, onBack }: ProfileScreenProps) {
+export function ProfileScreen({ 
+  member, 
+  badges, 
+  userBadges, 
+  isOwnProfile = false,
+  onBack,
+  onUpdateName,
+  onToggleAway,
+}: ProfileScreenProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState(member.name)
+  const [isSaving, setIsSaving] = useState(false)
+
   const title = getAchievementTitle(member)
   const earnedBadgeIds = userBadges.filter((ub) => ub.userId === member.userId).map((ub) => ub.badgeId)
 
@@ -31,10 +53,50 @@ export function ProfileScreen({ member, badges, userBadges, onBack }: ProfileScr
       ? Math.round((member.totalWins / member.totalVenuesProposed) * 100)
       : 0
 
+  const handleSaveName = async () => {
+    if (!onUpdateName || editName.trim() === member.name) {
+      setIsEditing(false)
+      return
+    }
+
+    const trimmedName = editName.trim()
+    if (!trimmedName) {
+      toast.error('Name cannot be empty')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      await onUpdateName(trimmedName)
+      toast.success('Name updated successfully')
+      setIsEditing(false)
+    } catch {
+      toast.error('Failed to update name')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditName(member.name)
+    setIsEditing(false)
+  }
+
+  const handleToggleAway = async (checked: boolean) => {
+    if (!onToggleAway) return
+    
+    try {
+      await onToggleAway(checked)
+      toast.success(checked ? 'Marked as away' : 'Marked as active')
+    } catch {
+      toast.error('Failed to update status')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <ScreenHeader title="Member Profile" onBack={onBack} />
+        <ScreenHeader title={isOwnProfile ? "My Profile" : "Member Profile"} onBack={onBack} />
 
         <Card className="mb-6">
           <CardContent className="pt-6">
@@ -43,7 +105,57 @@ export function ProfileScreen({ member, badges, userBadges, onBack }: ProfileScr
                 <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <h2 className="text-3xl font-semibold mb-2">{member.name}</h2>
+                <div className="flex items-center gap-3 mb-2">
+                  {isEditing ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="text-2xl font-semibold h-12"
+                        placeholder="Enter your name"
+                        disabled={isSaving}
+                        maxLength={200}
+                        autoFocus
+                      />
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        onClick={handleSaveName}
+                        disabled={isSaving}
+                      >
+                        <Check size={20} className="text-green-600" />
+                      </Button>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        onClick={handleCancelEdit}
+                        disabled={isSaving}
+                      >
+                        <X size={20} className="text-red-600" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <h2 className="text-3xl font-semibold">{member.name}</h2>
+                      {member.isAway && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded-md text-sm text-muted-foreground">
+                          <AirplaneTilt size={14} />
+                          Away
+                        </span>
+                      )}
+                      {isOwnProfile && onUpdateName && (
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          onClick={() => setIsEditing(true)}
+                          className="ml-1"
+                        >
+                          <PencilSimple size={18} />
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
                 {title && <TitleTag title={title} className="text-base" />}
                 <div className="grid grid-cols-4 gap-4 mt-6">
                   <div>
@@ -67,6 +179,28 @@ export function ProfileScreen({ member, badges, userBadges, onBack }: ProfileScr
             </div>
           </CardContent>
         </Card>
+
+        {isOwnProfile && onToggleAway && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="away-status" className="text-base font-medium">
+                    Away Status
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    When away, you'll be skipped in the rotation and won't be notified
+                  </p>
+                </div>
+                <Switch
+                  id="away-status"
+                  checked={member.isAway ?? false}
+                  onCheckedChange={handleToggleAway}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

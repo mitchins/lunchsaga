@@ -2,55 +2,20 @@
 API Tests for LunchSaga Backend
 
 These tests run against the pywrangler dev environment (miniflare).
-They test the actual API surface to ensure behavior matches expectations.
+The test server is automatically started and managed by the fixtures in conftest.py.
 
 Usage:
     From project root:
-    uv run pywrangler dev --port 3757 &  # Start dev server
     uv run pytest api/tests/ -v
 """
 
 import pytest
-import httpx
 
-# Test configuration
-BASE_URL = "http://localhost:3757"
-DEV_OTP_CODE = "000000"
-
-@pytest.fixture
-def client():
-    """Create an async HTTP client"""
-    return httpx.AsyncClient(base_url=BASE_URL, timeout=30.0)
+# Import DEV_OTP_CODE from conftest for use in test fixtures
+from conftest import DEV_OTP_CODE
 
 
-@pytest.fixture
-async def reset_db(client):
-    """Reset database before each test"""
-    await client.post("/api/_reset")
-    await client.post("/api/_migrate")
-
-
-@pytest.fixture
-async def auth_token(client, reset_db) -> str:
-    """Get an auth token for testing"""
-    email = "test@lunchsaga.test"
-
-    # Request magic link
-    response = await client.post("/api/auth/magic-link", json={"email": email})
-    assert response.status_code == 200
-
-    # Verify with dev OTP
-    response = await client.post(
-        "/api/auth/verify", json={"email": email, "code": DEV_OTP_CODE}
-    )
-    assert response.status_code == 200
-    return response.json()["token"]
-
-
-@pytest.fixture
-def auth_headers(auth_token):
-    """Auth headers for authenticated requests"""
-    return {"Authorization": f"Bearer {auth_token}"}
+# Note: client, reset_db, auth_token, and auth_headers fixtures are provided by conftest.py
 
 
 class TestHealthCheck:

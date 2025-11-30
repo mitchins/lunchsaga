@@ -4,14 +4,15 @@ LunchSaga Workflow Integration Tests
 These tests cover complete user journeys through the application.
 Each test simulates a real user's full workflow from start to finish.
 
-Run with: npm run test:api (requires dev server running)
+Run with: uv run pytest api/tests/ -v
+(The test server is automatically started by conftest.py fixtures)
 """
 
 import pytest
 import httpx
 
-BASE_URL = "http://localhost:3757"
-DEV_OTP_CODE = "000000"
+# Import DEV_OTP_CODE from conftest
+from conftest import DEV_OTP_CODE
 
 
 class APIClient:
@@ -52,9 +53,9 @@ class APIClient:
 
 
 @pytest.fixture
-async def http_client():
-    """Create an async HTTP client"""
-    async with httpx.AsyncClient(base_url=BASE_URL, timeout=30.0) as client:
+async def http_client(base_url: str):
+    """Create an async HTTP client using the base_url from conftest."""
+    async with httpx.AsyncClient(base_url=base_url, timeout=30.0) as client:
         yield client
 
 
