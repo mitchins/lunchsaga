@@ -79,7 +79,7 @@ class VotingService:
         cls, db, team_id: str, user_id: str, voting_days: int = 3
     ) -> dict | None:
         """Start a new lunch period"""
-        # Get current member
+        # Get current member (just to verify they're a team member)
         member = await TeamMember.objects.filter(
             db, team_id=team_id, user_id=user_id
         ).first()
@@ -95,13 +95,18 @@ class VotingService:
         if existing:
             return None  # Can't start new period while one is active
 
+        # Get the next organizer (lowest points, not away)
+        next_organizer = await RotationService.get_next_organizer(db, team_id)
+        if not next_organizer:
+            return None  # No eligible members
+
         now = datetime.now(timezone.utc)
         voting_deadline = now + timedelta(days=voting_days)
 
         period = await LunchPeriod.objects.create(
             db,
             team_id=team_id,
-            organizer_id=str(member.id),
+            organizer_id=next_organizer["id"],  # Use rotation logic, not caller
             start_date=now,
             status="proposing",
             voting_deadline=voting_deadline,
