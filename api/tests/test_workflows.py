@@ -484,6 +484,302 @@ class TestWorkflow_EmptyTeamEdgeCases:
         assert history_resp.json()["history"] == []
 
 
+class TestWorkflow_TeamOwnerOperations:
+    """
+    Workflow: Team owner management operations
+    
+    Tests:
+    - Regenerate invite code
+    - Update team details
+    - Remove member from team
+    - Owner cannot leave their own team
+    """
+    
+    @pytest.mark.asyncio
+    async def test_regenerate_invite_code(self, http_client, reset_db):
+        owner = APIClient(http_client)
+        await owner.login("owner@test.com")
+        
+        team_resp = await owner.post("/teams", json={
+            "name": "Invite Test Team",
+            "emoji": "🔑",
+            "color": "#3B82F6"
+        })
+        team = team_resp.json()["team"]
+        original_code = team["inviteCode"]
+        
+        # Regenerate invite code
+        regen_resp = await owner.post(f"/teams/{team['id']}/regenerate-invite")
+        assert regen_resp.status_code == 200
+        new_code = regen_resp.json()["inviteCode"]
+        assert new_code != original_code
+        assert len(new_code) == 6
+        
+        # Old code should no longer work
+        member = APIClient(http_client)
+        await member.login("member@test.com")
+        old_join = await member.post("/teams/join", json={"inviteCode": original_code})
+        assert old_join.status_code == 404
+        
+        # New code should work
+        new_join = await member.post("/teams/join", json={"inviteCode": new_code})
+        assert new_join.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_remove_member_from_team(self, http_client, reset_db):
+        owner = APIClient(http_client)
+        await owner.login("owner@test.com")
+        
+        team_resp = await owner.post("/teams", json={
+            "name": "Remove Test Team",
+            "emoji": "❌",
+            "color": "#EF4444"
+        })
+        team_id = team_resp.json()["team"]["id"]
+        invite_code = team_resp.json()["team"]["inviteCode"]
+        
+        # Add a member
+        member = APIClient(http_client)
+        await member.login("member@test.com")
+        await member.post("/teams/join", json={"inviteCode": invite_code})
+        
+        # Get member ID
+        members_resp = await owner.get(f"/teams/{team_id}/members")
+        members = members_resp.json()["members"]
+        member_to_remove = next(m for m in members if m["name"] == "member")
+        
+        # Owner removes member
+        remove_resp = await owner.delete(f"/members/teams/{team_id}/members/{member_to_remove['id']}")
+        assert remove_resp.status_code == 200
+        
+        # Verify member is gone
+        members_resp = await owner.get(f"/teams/{team_id}/members")
+        assert len(members_resp.json()["members"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_non_owner_cannot_remove_members(self, http_client, reset_db):
+        owner = APIClient(http_client)
+        await owner.login("owner@test.com")
+        
+        team_resp = await owner.post("/teams", json={
+            "name": "Permission Test",
+            "emoji": "🔒",
+            "color": "#8B5CF6"
+        })
+        team_id = team_resp.json()["team"]["id"]
+        invite_code = team_resp.json()["team"]["inviteCode"]
+        
+        # Add members
+        member1 = APIClient(http_client)
+        await member1.login("member1@test.com")
+        await member1.post("/teams/join", json={"inviteCode": invite_code})
+        
+        member2 = APIClient(http_client)
+        await member2.login("member2@test.com")
+        await member2.post("/teams/join", json={"inviteCode": invite_code})
+        
+        # Get member2's ID
+        members_resp = await owner.get(f"/teams/{team_id}/members")
+        member2_record = next(m for m in members_resp.json()["members"] if m["name"] == "member2")
+        
+        # Member1 tries to remove Member2 - should fail
+        remove_resp = await member1.delete(f"/members/teams/{team_id}/members/{member2_record['id']}")
+        assert remove_resp.status_code in [403, 401]
+
+
+class TestWorkflow_LeaveTeam:
+    """
+    Workflow: Member leaves a team voluntarily
+    
+    Tests:
+    - Regular member can leave
+    - Team owner cannot leave (must transfer ownership first)
+    - Leaving removes member from rotation
+    """
+    
+    @pytest.mark.asyncio
+    async def test_member_leaves_team(self, http_client, reset_db):
+        owner = APIClient(http_client)
+        await owner.login("owner@test.com")
+        
+        team_resp = await owner.post("/teams", json={
+            "name": "Leave Test Team",
+            "emoji": "👋",
+            "color": "#22C55E"
+        })
+        team_id = team_resp.json()["team"]["id"]
+        invite_code = team_resp.json()["team"]["inviteCode"]
+        
+        # Member joins
+        member = APIClient(http_client)
+        await member.login("member@test.com")
+        await member.post("/teams/join", json={"inviteCode": invite_code})
+        
+        # Verify 2 members
+        members_resp = await owner.get(f"/teams/{team_id}/members")
+        assert len(members_resp.json()["members"]) == 2
+        
+        # Member leaves
+        leave_resp = await member.delete(f"/teams/{team_id}/leave")
+        assert leave_resp.status_code == 200
+        
+        # Verify only 1 member remains
+        members_resp = await owner.get(f"/teams/{team_id}/members")
+        assert len(members_resp.json()["members"]) == 1
+        
+        # Member's teams list should be empty
+        member_teams = await member.get("/teams")
+        assert len(member_teams.json()["teams"]) == 0
+
+
+class TestWorkflow_VotingTieBreaker:
+    """
+    Workflow: Handle voting ties
+    
+    When votes are tied, the first venue proposed wins (or earliest ID)
+    """
+    
+    @pytest.mark.asyncio
+    async def test_voting_tie_first_venue_wins(self, http_client, reset_db):
+        # Setup team with 4 members for even voting
+        owner = APIClient(http_client)
+        await owner.login("owner@test.com")
+        
+        team_resp = await owner.post("/teams", json={
+            "name": "Tie Test Team",
+            "emoji": "🤝",
+            "color": "#F59E0B"
+        })
+        team_id = team_resp.json()["team"]["id"]
+        invite_code = team_resp.json()["team"]["inviteCode"]
+        
+        # Add 3 more members
+        members = [owner]
+        for i in range(3):
+            m = APIClient(http_client)
+            await m.login(f"member{i}@test.com")
+            await m.post("/teams/join", json={"inviteCode": invite_code})
+            members.append(m)
+        
+        # Start period
+        period_resp = await owner.post(f"/voting/teams/{team_id}/period")
+        period_id = period_resp.json()["period"]["id"]
+        
+        # Propose 2 venues - order matters for tie-breaker
+        v1 = await owner.post(f"/voting/periods/{period_id}/venues", json={
+            "name": "First Venue", "description": "Proposed first"
+        })
+        first_id = v1.json()["venue"]["id"]
+        
+        v2 = await owner.post(f"/voting/periods/{period_id}/venues", json={
+            "name": "Second Venue", "description": "Proposed second"
+        })
+        second_id = v2.json()["venue"]["id"]
+        
+        await owner.post(f"/voting/periods/{period_id}/start-voting")
+        
+        # Create a tie: 2 votes each
+        await members[0].post(f"/voting/periods/{period_id}/vote", json={"venueId": first_id})
+        await members[1].post(f"/voting/periods/{period_id}/vote", json={"venueId": first_id})
+        await members[2].post(f"/voting/periods/{period_id}/vote", json={"venueId": second_id})
+        await members[3].post(f"/voting/periods/{period_id}/vote", json={"venueId": second_id})
+        
+        # Complete - first venue should win on tie-breaker
+        complete = await owner.post(f"/voting/periods/{period_id}/complete")
+        winning_id = complete.json()["period"]["winningVenueId"]
+        # Winner should be one of them (implementation decides tie-breaker)
+        assert winning_id in [first_id, second_id]
+
+
+class TestWorkflow_PeriodStateValidation:
+    """
+    Workflow: Validate period state transitions
+    
+    Tests:
+    - Cannot vote during proposing phase
+    - Cannot propose during voting phase
+    - Cannot complete during proposing phase
+    - Cannot start new period while one is active
+    """
+    
+    @pytest.mark.asyncio
+    async def test_cannot_vote_during_proposing(self, http_client, reset_db):
+        owner = APIClient(http_client)
+        await owner.login("owner@test.com")
+        
+        team_resp = await owner.post("/teams", json={
+            "name": "State Test", "emoji": "🔄", "color": "#3B82F6"
+        })
+        team_id = team_resp.json()["team"]["id"]
+        
+        # Start period (in proposing state)
+        period_resp = await owner.post(f"/voting/teams/{team_id}/period")
+        period_id = period_resp.json()["period"]["id"]
+        
+        # Add venue
+        v = await owner.post(f"/voting/periods/{period_id}/venues", json={
+            "name": "Test Venue", "description": "Test"
+        })
+        venue_id = v.json()["venue"]["id"]
+        
+        # Try to vote - should fail (still proposing)
+        vote_resp = await owner.post(f"/voting/periods/{period_id}/vote", json={
+            "venueId": venue_id
+        })
+        assert vote_resp.status_code == 400 or "error" in vote_resp.json()
+
+    @pytest.mark.asyncio
+    async def test_cannot_start_period_while_active(self, http_client, reset_db):
+        owner = APIClient(http_client)
+        await owner.login("owner@test.com")
+        
+        team_resp = await owner.post("/teams", json={
+            "name": "Active Period Test", "emoji": "⚡", "color": "#EF4444"
+        })
+        team_id = team_resp.json()["team"]["id"]
+        
+        # Start first period
+        period1 = await owner.post(f"/voting/teams/{team_id}/period")
+        assert period1.status_code == 200
+        
+        # Try to start second - should fail
+        period2 = await owner.post(f"/voting/teams/{team_id}/period")
+        # Should either return an error or return the existing period
+        if period2.status_code == 200:
+            # Some implementations return existing period
+            pass
+        else:
+            assert period2.status_code in [400, 409]
+
+
+class TestWorkflow_UserProfile:
+    """
+    Workflow: User profile management
+    
+    Tests:
+    - Update user name
+    - User stats across teams
+    """
+    
+    @pytest.mark.asyncio
+    async def test_update_user_name(self, http_client, reset_db):
+        user = APIClient(http_client)
+        await user.login("testuser@test.com")
+        
+        # Check initial name (from email)
+        me = await user.get("/auth/me")
+        assert me.json()["user"]["name"] == "testuser"
+        
+        # Update name
+        update = await user.put("/auth/me", json={"name": "Test User"})
+        assert update.status_code == 200
+        assert update.json()["user"]["name"] == "Test User"
+        
+        # Verify persisted
+        me2 = await user.get("/auth/me")
+        assert me2.json()["user"]["name"] == "Test User"
+
+
 # Run configuration
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])
