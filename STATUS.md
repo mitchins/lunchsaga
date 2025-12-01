@@ -40,8 +40,9 @@
 - 🟢 Points-based next organizer calculation
 - 🟢 "Up Next" indicator display
 - 🟢 Points increment after completing period
+- 🟢 Skip away members in rotation
+- 🟢 Fair rotation (verified: 8 weeks = 2 turns each for 4 members)
 - 🔵 New members start with team average points
-- 🔵 Skip away members in rotation
 
 ## Voting Flow
 - 🟢 Start new lunch period
@@ -62,11 +63,12 @@
 - 🔵 Venue history with ratings
 
 ## Profile & Settings
-- 🟡 Profile screen (UI exists, not wired)
-    Needs: API integration for member stats, achievements
+- 🟢 Profile screen with edit mode
+- 🟢 "My Profile" navigation from header icon
+- 🟢 Member stats display (points, wins, venues proposed)
 - 🟡 Settings screen (UI exists, partial wiring)
     Needs: Holiday mode toggle, team settings
-- 🔵 Update user profile (name, avatar)
+- 🔵 Update user profile (name, avatar via API)
 - 🔵 Leaderboard screen wiring
 
 ## Gamification
@@ -77,12 +79,13 @@
 - 🔵 Achievement titles in member cards
 
 ## Testing
-- 🟢 API unit tests (25 tests)
+- 🟢 API unit tests
+    42 tests passing
+- 🟢 Full saga simulation tests (4-week + 8-week rotation fairness)
+- 🟢 Workflow integration tests (15 scenarios)
+- 🟢 Frontend unit tests (38 tests passing)
 - 🟢 E2E test scaffolding (Playwright)
-- 🟡 Full workflow integration tests
-    In progress: Complete user journey tests
-- 🔵 Frontend component tests
-- 🔵 API edge case coverage
+- 🔵 E2E browser tests (infrastructure ready)
 
 ## Polish & UX
 - 🔵 Loading states for all async operations
@@ -91,6 +94,52 @@
 - 🔵 Mobile responsive refinements
 - 🔵 Keyboard navigation
 - 🔵 Accessibility audit fixes
+
+---
+
+## Future Features (Ideation)
+
+### 🏠 Office/Home Lunch Mode
+- 🔵 "In-house" period type (no external venue)
+    Theme/cuisine voting instead of venue selection
+    E.g., "Taco Tuesday", "Asian Fusion", "Comfort Food"
+- 🔵 Location toggle per team
+    Office address or "Remote/Home"
+    Affects whether venue or theme is voted on
+- 🔵 Recipe/menu suggestions (optional)
+    Members can propose dishes that fit the theme
+
+### 📅 Ad-hoc Scheduling
+- 🔵 Remove weekly cadence assumption
+    Periods triggered manually, not on schedule
+    "Start a lunch" button instead of automatic rotation
+- 🔵 Flexible deadline setting
+    Organizer sets voting window (hours/days)
+    Quick polls for same-day decisions
+- 🔵 Optional recurring schedule
+    Teams can opt-in to weekly/biweekly reminders
+    Or stay fully ad-hoc
+
+### 🥘 Potluck Mode
+- 🔵 RSVP-style attendance tracking
+    "I'm coming" / "Can't make it" / "Maybe"
+    Headcount for planning
+- 🔵 Dish signup (optional visibility)
+    Members claim what they'll bring
+    Categories: Main, Side, Dessert, Drinks
+    Option to hide dishes for surprise element
+- 🔵 Dietary info display
+    Show member dietary restrictions
+    Help avoid conflicts with dish assignments
+- 🔵 Simplified flow
+    No venue voting, just coordination
+    Organizer sets date/time/location
+
+### Architecture Notes
+- Period model needs `type` field: "venue" | "theme" | "potluck"
+- New `PotluckRSVP` and `DishSignup` models for potluck
+- Theme voting reuses VenueOption with different semantics
+- Ad-hoc: Remove `voting_deadline` requirement, make optional
 
 ---
 
