@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 import jwt
 
+from kinglet.email import EmailMessage, get_email_sender
 from models import MagicLink, User
 
 
@@ -44,7 +45,7 @@ class AuthService:
     async def send_magic_link(cls, db, email: str, env) -> dict:
         """
         Generate and store magic link + OTP code.
-        In production, this would also send an email.
+        Sends email via SES in production or mock in development.
         """
         # Check for dev OTP bypass
         dev_otp = getattr(env, "DEV_OTP_CODE", None)
@@ -62,8 +63,27 @@ class AuthService:
             expires_at=expires,
         )
 
-        # In production, send email here
-        # For now, just log in development
+        # Send email with magic link code
+        email_sender = get_email_sender(env)
+        email_message = EmailMessage(
+            to=[email],
+            subject="Your LunchSaga Login Code",
+            body_text=f"Your login code is: {code}\n\nThis code will expire in 15 minutes.",
+            body_html=f"""
+            <html>
+                <body>
+                    <h2>Your LunchSaga Login Code</h2>
+                    <p>Your login code is: <strong>{code}</strong></p>
+                    <p>This code will expire in 15 minutes.</p>
+                </body>
+            </html>
+            """,
+            from_address=getattr(env, "EMAIL_FROM_ADDRESS", "noreply@lunchsaga.app"),
+        )
+        
+        await email_sender.send_email(email_message)
+
+        # In development, also log for convenience
         environment = getattr(env, "ENVIRONMENT", "development")
         if environment == "development":
             print(f"[DEV] Magic link for {email}: code={code}, token={token}")

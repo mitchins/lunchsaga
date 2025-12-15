@@ -16,6 +16,15 @@ from .decorators import (
     wrap_exceptions,
 )
 
+# Email service (new in 1.8.1)
+from .email import (
+    EmailMessage,
+    EmailSendResult,
+    MockEmailSender,
+    SESEmailSender,
+    get_email_sender,
+)
+
 # Exceptions
 from .exceptions import DevOnlyError, GeoRestrictedError, HTTPError
 
@@ -71,7 +80,17 @@ from .storage import (
 )
 
 # Testing utilities
-from .testing import TestClient
+from .testing import (
+    FaithfulMockD1Database,
+    MockDatabase,
+    MockEnv,
+    MockHeaders,
+    MockQuery,
+    MockRequest,
+    MockResult,
+    MockRow,
+    TestClient,
+)
 
 # Utilities
 from .utils import (
@@ -142,7 +161,7 @@ try:
 except ImportError:
     _orm_available = False
 
-__version__ = "1.7.0"
+__version__ = "1.8.1"
 __author__ = "Mitchell Currie"
 
 # Export commonly used items
@@ -156,6 +175,12 @@ __all__ = [
     "Response",
     "error_response",
     "generate_request_id",
+    # Email (new in 1.8.1)
+    "EmailMessage",
+    "EmailSendResult",
+    "MockEmailSender",
+    "SESEmailSender",
+    "get_email_sender",
     # Exceptions
     "HTTPError",
     "GeoRestrictedError",
@@ -172,6 +197,14 @@ __all__ = [
     "arraybuffer_to_bytes",
     # Testing
     "TestClient",
+    "FaithfulMockD1Database",
+    "MockDatabase",
+    "MockEnv",
+    "MockHeaders",
+    "MockQuery",
+    "MockRequest",
+    "MockResult",
+    "MockRow",
     # Middleware
     "Middleware",
     "CorsMiddleware",
