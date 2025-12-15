@@ -233,4 +233,8 @@ def get_email_sender(env=None, use_mock=None) -> MockEmailSender | SESEmailSende
         # Get SES configuration from environment
         region = getattr(env, "AWS_REGION", "us-east-1") if env else "us-east-1"
         from_address = getattr(env, "EMAIL_FROM_ADDRESS", None) if env else None
+        if not from_address:
+            raise ValueError(
+                "Email from_address is required but not provided in environment EMAIL_FROM_ADDRESS"
+            )
         return SESEmailSender(region=region, from_address=from_address)

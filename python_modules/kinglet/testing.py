@@ -228,17 +228,17 @@ class FaithfulMockQuery:
     def bind(self, *args):
         """Bind parameters to the query"""
         self.bindings = list(args)
-        # Debug logging (can be removed later)
-        # print(f"[Mock D1] SQL: {self.sql[:100]}")
-        # print(f"[Mock D1] Bindings: {self.bindings}")
         return self
 
     async def run(self):
         """Execute the query and return metadata"""
         result = self._execute()
+        # Handle both dict (metadata) and list (SELECT results) responses
         if isinstance(result, dict):
             return MockResult(result)
-        return MockResult({"changes": result.get("changes", 0), "last_row_id": result.get("last_row_id", 0)})
+        else:
+            # For SELECT queries that return lists
+            return MockResult(result if isinstance(result, list) else [])
 
     async def first(self):
         """Execute and return first row"""
@@ -302,7 +302,7 @@ class FaithfulMockQuery:
             # Handle auto-increment ID
             # If id is provided but is 0 or None, generate a new ID
             if "id" in new_row:
-                if new_row["id"] is None or new_row["id"] == 0 or new_row["id"] == "":
+                if new_row["id"] is None or new_row["id"] == 0:
                     self.database._autoincrement_counters[table_name] += 1
                     new_row["id"] = self.database._autoincrement_counters[table_name]
                 # If a specific ID is provided, use it and update counter if necessary
@@ -330,7 +330,7 @@ class FaithfulMockQuery:
                 new_row[f"col{i}"] = val
             
             # Handle auto-increment ID
-            if "id" not in new_row or not new_row.get("id"):
+            if new_row.get("id") is None:
                 self.database._autoincrement_counters[table_name] += 1
                 new_row["id"] = self.database._autoincrement_counters[table_name]
             

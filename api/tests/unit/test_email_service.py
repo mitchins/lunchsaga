@@ -224,6 +224,7 @@ class TestEmailFactory:
         class MockEnv:
             ENVIRONMENT = "development"
             AWS_REGION = "us-west-2"
+            EMAIL_FROM_ADDRESS = "noreply@app.com"
 
         sender = get_email_sender(MockEnv(), use_mock=False)
         assert isinstance(sender, SESEmailSender)

@@ -41,6 +41,29 @@ class AuthService:
         """Generate a secure token for magic link"""
         return secrets.token_urlsafe(32)
 
+    @staticmethod
+    def _create_magic_link_email(email: str, code: str, env) -> EmailMessage:
+        """Create magic link email message with templates"""
+        body_text = f"Your login code is: {code}\n\nThis code will expire in 15 minutes."
+        
+        body_html = f"""
+        <html>
+            <body>
+                <h2>Your LunchSaga Login Code</h2>
+                <p>Your login code is: <strong>{code}</strong></p>
+                <p>This code will expire in 15 minutes.</p>
+            </body>
+        </html>
+        """
+        
+        return EmailMessage(
+            to=[email],
+            subject="Your LunchSaga Login Code",
+            body_text=body_text,
+            body_html=body_html,
+            from_address=getattr(env, "EMAIL_FROM_ADDRESS", "noreply@lunchsaga.app"),
+        )
+
     @classmethod
     async def send_magic_link(cls, db, email: str, env) -> dict:
         """
@@ -65,22 +88,7 @@ class AuthService:
 
         # Send email with magic link code
         email_sender = get_email_sender(env)
-        email_message = EmailMessage(
-            to=[email],
-            subject="Your LunchSaga Login Code",
-            body_text=f"Your login code is: {code}\n\nThis code will expire in 15 minutes.",
-            body_html=f"""
-            <html>
-                <body>
-                    <h2>Your LunchSaga Login Code</h2>
-                    <p>Your login code is: <strong>{code}</strong></p>
-                    <p>This code will expire in 15 minutes.</p>
-                </body>
-            </html>
-            """,
-            from_address=getattr(env, "EMAIL_FROM_ADDRESS", "noreply@lunchsaga.app"),
-        )
-        
+        email_message = cls._create_magic_link_email(email, code, env)
         await email_sender.send_email(email_message)
 
         # In development, also log for convenience
