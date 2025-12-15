@@ -206,14 +206,14 @@ class FaithfulMockD1Database:
             if table_name not in self._tables:
                 self._tables[table_name] = []
                 self._schema[table_name] = {}
-                self._autoincrement_counters[table_name] = 1
+                self._autoincrement_counters[table_name] = 0  # Start from 0, will be incremented to 1
 
     def _get_or_create_table(self, table_name: str):
         """Get table or create if doesn't exist"""
         if table_name not in self._tables:
             self._tables[table_name] = []
             self._schema[table_name] = {}
-            self._autoincrement_counters[table_name] = 1
+            self._autoincrement_counters[table_name] = 0
         return self._tables[table_name]
 
 
@@ -228,6 +228,9 @@ class FaithfulMockQuery:
     def bind(self, *args):
         """Bind parameters to the query"""
         self.bindings = list(args)
+        # Debug logging (can be removed later)
+        # print(f"[Mock D1] SQL: {self.sql[:100]}")
+        # print(f"[Mock D1] Bindings: {self.bindings}")
         return self
 
     async def run(self):
@@ -264,7 +267,9 @@ class FaithfulMockQuery:
         elif sql_upper.startswith("DELETE"):
             return self._handle_delete()
         else:
-            # Default response for DDL
+            # Default response for DDL (CREATE TABLE, etc.)
+            if "CREATE TABLE" in sql_upper:
+                self.database._handle_create_table(self.sql)
             return {"changes": 0, "last_row_id": 0}
 
     def _handle_insert(self):
@@ -294,10 +299,19 @@ class FaithfulMockQuery:
                 else:
                     new_row[col] = None
 
-            # Add auto-increment ID if not provided
-            if "id" not in new_row or new_row["id"] is None:
-                new_row["id"] = self.database._autoincrement_counters[table_name]
+            # Handle auto-increment ID
+            # If id is provided but is 0 or None, generate a new ID
+            if "id" in new_row:
+                if new_row["id"] is None or new_row["id"] == 0 or new_row["id"] == "":
+                    self.database._autoincrement_counters[table_name] += 1
+                    new_row["id"] = self.database._autoincrement_counters[table_name]
+                # If a specific ID is provided, use it and update counter if necessary
+                elif new_row["id"] >= self.database._autoincrement_counters[table_name]:
+                    self.database._autoincrement_counters[table_name] = new_row["id"]
+            else:
+                # No id column, generate one
                 self.database._autoincrement_counters[table_name] += 1
+                new_row["id"] = self.database._autoincrement_counters[table_name]
 
             table.append(new_row)
             return {"changes": 1, "last_row_id": new_row.get("id", 0)}
@@ -315,10 +329,10 @@ class FaithfulMockQuery:
             for i, val in enumerate(self.bindings):
                 new_row[f"col{i}"] = val
             
-            # Add auto-increment ID if not provided
-            if "id" not in new_row:
-                new_row["id"] = self.database._autoincrement_counters[table_name]
+            # Handle auto-increment ID
+            if "id" not in new_row or not new_row.get("id"):
                 self.database._autoincrement_counters[table_name] += 1
+                new_row["id"] = self.database._autoincrement_counters[table_name]
             
             table.append(new_row)
             return {"changes": 1, "last_row_id": new_row.get("id", 0)}
@@ -506,13 +520,23 @@ class MockRow:
         return self.data
 
 
+class MockMeta:
+    """Mock D1 result metadata with attribute access"""
+
+    def __init__(self, data: dict):
+        self.changes = data.get("changes", 0)
+        self.last_row_id = data.get("last_row_id", 0)
+        self.rows_written = data.get("rows_written", self.changes)
+        self.rows_read = data.get("rows_read", 0)
+
+
 class MockResult:
     """Mock D1 query result"""
 
     def __init__(self, data):
         if isinstance(data, dict):
-            self.meta = data
+            self.meta = MockMeta(data)
             self.results = []
         else:
             self.results = data
-            self.meta = {"changes": len(data)}
+            self.meta = MockMeta({"changes": len(data), "rows_read": len(data)})
