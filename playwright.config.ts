@@ -5,7 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
  * Tests run against the local Vite dev server with mock data
  */
 
-const PORT = 5000;
+const PORT = 5173; // Vite default port
 const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
@@ -50,8 +50,10 @@ export default defineConfig({
   ],
 
   // Run local dev server before starting the tests
+  // Only run frontend (vite) to avoid needing pywrangler/uv in CI
+  // Note: API calls will fail without backend - tests may fail until mocking is added
   webServer: {
-    command: 'npm run dev',
+    command: 'npm run dev:web',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
