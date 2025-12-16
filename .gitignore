@@ -53,3 +53,26 @@ htmlcov/
 
 # Temp scripts
 start-dev.sh
+python_modules/kinglet/__init__.py
+python_modules/kinglet/email.py
+python_modules/kinglet/openapi.py
+python_modules/kinglet/orm.py
+python_modules/kinglet/ses.py
+python_modules/kinglet/storage.py
+python_modules/kinglet/testing.py
+python_modules/kinglet-1.7.0.dist-info/entry_points.txt
+python_modules/kinglet-1.7.0.dist-info/INSTALLER
+python_modules/kinglet-1.7.0.dist-info/METADATA
+python_modules/kinglet-1.7.0.dist-info/RECORD
+python_modules/kinglet-1.7.0.dist-info/REQUESTED
+python_modules/kinglet-1.7.0.dist-info/top_level.txt
+python_modules/kinglet-1.7.0.dist-info/WHEEL
+python_modules/kinglet-1.7.0.dist-info/licenses/LICENSE
+python_modules/kinglet-1.8.3.dist-info/entry_points.txt
+python_modules/kinglet-1.8.3.dist-info/INSTALLER
+python_modules/kinglet-1.8.3.dist-info/METADATA
+python_modules/kinglet-1.8.3.dist-info/RECORD
+python_modules/kinglet-1.8.3.dist-info/REQUESTED
+python_modules/kinglet-1.8.3.dist-info/top_level.txt
+python_modules/kinglet-1.8.3.dist-info/WHEEL
+python_modules/kinglet-1.8.3.dist-info/licenses/LICENSE
