@@ -31,7 +31,6 @@ jobs:
       
       - name: Run Playwright tests
         run: npx playwright test
-        continue-on-error: true  # Don't fail CI if E2E tests fail - backend not mocked yet
       
       - name: Upload test results
         if: always()

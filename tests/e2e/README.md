@@ -212,11 +212,41 @@ See `.github/workflows/e2e-tests.yml` for CI configuration.
 
 ## Mock Data Environment
 
-These tests run against the mocked data environment defined in `src/mocks/`. No real backend is required. The app uses:
+These tests run against a **mock API server** that provides realistic responses without requiring the full Python backend (pywrangler). The mock API is automatically started by Playwright before tests run.
 
-- Mock users, teams, and members
-- Mock voting periods and history
-- Mock badges and achievements
+### Mock API Features
+
+The mock API (`tests/e2e/mock-api.mjs`) provides:
+
+- **Auth endpoints**: Magic link sending, code verification, JWT tokens
+- **Team endpoints**: List teams, create teams, get team details, manage members
+- **User endpoints**: Get current user, update profile
+- **In-memory storage**: Data persists during test run but resets between runs
+
+### Magic Link Code
+
+For E2E tests, the magic link code is always **`000000`** (six zeros). This is logged to console when a magic link is requested.
+
+### Running with Mock API
+
+The mock API starts automatically when running tests:
+
+```bash
+# Runs both mock API (port 3757) and Vite dev server (port 5173)
+npm run dev:e2e
+
+# Or run tests directly - Playwright starts both servers
+npm run test:e2e
+```
+
+### Adding New Mock Endpoints
+
+To support additional API calls in tests, edit `tests/e2e/mock-api.mjs`:
+
+1. Add handler in the `handleRequest` function
+2. Follow existing patterns for CORS and JSON responses
+3. Use in-memory storage (`mockUsers`, `mockTeams`, etc.)
+4. Return D1-compatible response format
 
 ## Maintenance
 

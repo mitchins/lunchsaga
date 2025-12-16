@@ -50,10 +50,9 @@ export default defineConfig({
   ],
 
   // Run local dev server before starting the tests
-  // Only run frontend (vite) to avoid needing pywrangler/uv in CI
-  // Note: API calls will fail without backend - tests may fail until mocking is added
+  // Runs both mock API and Vite dev server for E2E tests
   webServer: {
-    command: 'npm run dev:web',
+    command: 'npm run dev:e2e',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
