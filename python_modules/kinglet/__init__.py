@@ -162,7 +162,7 @@ try:
 except ImportError:
     _orm_available = False
 
-__version__ = "1.8.1"
+__version__ = "1.8.3"
 __author__ = "Mitchell Currie"
 
 # Export commonly used items
