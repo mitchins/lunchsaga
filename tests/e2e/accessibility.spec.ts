@@ -144,7 +144,6 @@ test.describe('Accessibility', () => {
     
     // Try to tab through the page
     await page.keyboard.press('Tab');
-    await page.waitForTimeout(100);
     
     // Check if something received focus
     const focusedElement = page.locator(':focus');
