@@ -10,10 +10,6 @@ import { quickLogin, navigateAndWait } from './helpers';
  */
 
 test.describe('Accessibility', () => {
-  test.beforeEach(async ({ page }) => {
-    await quickLogin(page);
-  });
-
   test('login screen has no critical accessibility violations', async ({ page }) => {
     await page.goto('/');
     
@@ -35,6 +31,7 @@ test.describe('Accessibility', () => {
   });
 
   test('dashboard has no critical accessibility violations', async ({ page }) => {
+    await quickLogin(page);
     await navigateAndWait(page, '/dashboard');
     
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -55,6 +52,7 @@ test.describe('Accessibility', () => {
   });
 
   test('voting screen has no critical accessibility violations', async ({ page }) => {
+    await quickLogin(page);
     await navigateAndWait(page, '/vote');
     
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -75,6 +73,7 @@ test.describe('Accessibility', () => {
   });
 
   test('buttons have accessible names', async ({ page }) => {
+    await quickLogin(page);
     await navigateAndWait(page, '/dashboard');
     
     // Get all buttons
@@ -140,6 +139,7 @@ test.describe('Accessibility', () => {
   });
 
   test('interactive elements are keyboard accessible', async ({ page }) => {
+    await quickLogin(page);
     await navigateAndWait(page, '/dashboard');
     
     // Try to tab through the page
@@ -154,6 +154,7 @@ test.describe('Accessibility', () => {
   });
 
   test('switch controls have proper ARIA roles', async ({ page }) => {
+    await quickLogin(page);
     await navigateAndWait(page, '/dashboard');
     
     // Look for switch elements (holiday mode toggle)
@@ -171,6 +172,7 @@ test.describe('Accessibility', () => {
   });
 
   test('leaderboard has proper heading hierarchy', async ({ page }) => {
+    await quickLogin(page);
     await navigateAndWait(page, '/leaderboard');
     
     // Check for headings

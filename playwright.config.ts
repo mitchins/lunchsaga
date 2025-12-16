@@ -11,6 +11,14 @@ const BASE_URL = `http://localhost:${PORT}`;
 export default defineConfig({
   testDir: './tests/e2e',
   
+  // Maximum time one test can run for (30 seconds)
+  timeout: 30 * 1000,
+  
+  // Expect timeout for assertions (5 seconds)
+  expect: {
+    timeout: 5 * 1000,
+  },
+  
   // Run tests in files in parallel
   fullyParallel: true,
   
@@ -30,6 +38,12 @@ export default defineConfig({
   use: {
     // Base URL to use in actions like `await page.goto('/')`
     baseURL: process.env.BASE_URL || BASE_URL,
+    
+    // Maximum time for a single action (10 seconds)
+    actionTimeout: 10 * 1000,
+    
+    // Maximum navigation time (15 seconds)  
+    navigationTimeout: 15 * 1000,
     
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',

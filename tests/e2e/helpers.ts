@@ -32,23 +32,23 @@ export async function quickLogin(page: Page, email = 'test@example.com'): Promis
     await emailInput.fill(email);
     const submitButton = page.getByRole('button', { name: /continue|send|sign in|login/i }).first();
     await submitButton.click();
-    await page.waitForTimeout(1500);
     
+    // Wait for code input to appear
     const codeInput = page.getByRole('textbox', { name: /code|verify/i });
-    if (await codeInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      if (magicCode) {
-        await codeInput.fill(magicCode);
-        const verifyButton = page.getByRole('button', { name: /verify|confirm/i }).first();
-        await verifyButton.click();
-        await page.waitForTimeout(1000);
-      }
+    await codeInput.waitFor({ state: 'visible', timeout: 5000 });
+    
+    if (magicCode) {
+      await codeInput.fill(magicCode);
+      const verifyButton = page.getByRole('button', { name: /verify|confirm/i }).first();
+      await verifyButton.click();
     }
   }
   
   // Remove console listener
   page.off('console', consoleHandler);
   
-  await page.waitForLoadState('networkidle');
+  // Wait for navigation to complete - use domcontentloaded instead of networkidle
+  await page.waitForLoadState('domcontentloaded');
 }
 
 /**
@@ -68,8 +68,8 @@ export async function selectFirstTeam(page: Page) {
  */
 /* istanbul ignore next */
 export async function waitForPageIdle(page: Page) {
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(300); // Small buffer for animations
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(200); // Small buffer for animations
 }
 
 /**
@@ -94,7 +94,7 @@ export async function closeToasts(page: Page) {
  */
 export async function navigateAndWait(page: Page, path: string): Promise<void> {
   await page.goto(path);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 }
 
 /**

@@ -13,7 +13,7 @@ test.describe('Application Smoke Tests', () => {
     await page.goto('/');
     
     // Wait for app to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check for the brand/logo - using text content that's likely present
     const brandElement = page.getByText(/lunch/i).first();
@@ -50,7 +50,7 @@ test.describe('Application Smoke Tests', () => {
     
     // In a real scenario, this might redirect to login
     // For now, check if page loads
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // URL should contain 'teams' or redirect happened
     const currentUrl = page.url();
@@ -61,7 +61,7 @@ test.describe('Application Smoke Tests', () => {
     // Navigate directly to dashboard
     await page.goto('/dashboard');
     
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check if we're on dashboard or redirected to login/teams
     const currentUrl = page.url();
