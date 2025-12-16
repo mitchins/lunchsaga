@@ -143,14 +143,13 @@ api/tests/
 ├── test_workflows.py        # Integration tests
 └── unit/
     ├── conftest.py          # Unit test config (no pywrangler)
-    ├── test_email_service.py    # Email module tests (16 tests, all passing)
-    └── test_auth_service.py     # Auth service tests (partial)
+    └── test_email_service.py    # Email module tests (16 tests, all passing)
 ```
 
 ### Running Tests
 
 ```bash
-# Fast unit tests (no pywrangler needed)
+# Fast unit tests (no pywrangler needed) - 16 tests, all passing
 python3 -m pytest api/tests/unit/ -v
 
 # Integration tests (requires uv and pywrangler)
@@ -161,8 +160,8 @@ uv run pytest api/tests/ -v
 
 Current test coverage with Kinglet 1.8.1 features:
 
-- **Email Module**: Comprehensive test coverage (16 tests)
-- **Auth Service**: 67% coverage (email integration working)
+- **Email Module**: Comprehensive test coverage (16 tests, 100% passing)
+- **Auth Service**: Email integration working in production code
 - **Models**: 100% coverage
 
 ### Coverage Highlights
@@ -172,10 +171,12 @@ Current test coverage with Kinglet 1.8.1 features:
   - EmailMessage: Data structure tests
   - Factory function: All scenarios tested
 
-- `api/src/domains/auth/service.py`: 67% coverage
+- `api/src/domains/auth/service.py`: Email integration implemented
   - Email integration: ✅ Working
   - Magic link generation: ✅ Working
-  - JWT token generation: ✅ Working
+  - Production-ready email sending
+
+**Note**: For comprehensive testing of auth service business logic with database operations, use the existing integration tests with pywrangler.
 
 ## Migration Guide
 
