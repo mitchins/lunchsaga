@@ -26,7 +26,7 @@ test.describe('Leaderboard Screen', () => {
 
   test('leaderboard shows member entries', async ({ page }) => {
     await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Look for member names or entries
     // Leaderboard entries might be in a list, table, or cards
@@ -42,7 +42,7 @@ test.describe('Leaderboard Screen', () => {
 
   test('leaderboard entries display scores or stats', async ({ page }) => {
     await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Look for numerical values (scores, points, wins, etc.)
     const numbers = page.locator('text=/\\d+/');
@@ -54,7 +54,7 @@ test.describe('Leaderboard Screen', () => {
 
   test('badges or icons render on leaderboard', async ({ page }) => {
     await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Look for badges, icons, or emoji
     const badges = page.locator('[class*="badge"], [data-testid*="badge"]').or(
@@ -70,7 +70,7 @@ test.describe('Leaderboard Screen', () => {
 
   test('leaderboard appears sorted correctly', async ({ page }) => {
     await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Get all numeric scores/points visible
     const scoreElements = page.locator('[class*="score"], [class*="point"]').or(
@@ -96,7 +96,7 @@ test.describe('Leaderboard Screen', () => {
 
   test('clicking member entry navigates to profile', async ({ page }) => {
     await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Find clickable member entry
     const memberEntry = page.locator('[role="button"]').or(
@@ -115,7 +115,7 @@ test.describe('Leaderboard Screen', () => {
 
   test('back navigation works from leaderboard', async ({ page }) => {
     await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     const backButton = page.getByRole('button', { name: /back|return|←/i });
     

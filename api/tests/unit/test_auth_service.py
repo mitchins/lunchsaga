@@ -1,15 +1,14 @@
 """
-Unit tests for Auth Service using Kinglet 1.8.1 testing features
+Unit tests for Auth Service using Kinglet 1.8.3 testing features
 
 These tests use:
-- FaithfulMockD1Database for database operations
+- MockD1Database for database operations
 - MockEmailSender for email verification
 """
 
 import pytest
 
-from kinglet import FaithfulMockD1Database, MockEmailSender, get_email_sender
-from kinglet.email import EmailMessage
+from kinglet.testing import MockD1Database, MockEmailSender
 
 from domains.auth.service import AuthService
 from models import User, MagicLink
@@ -28,7 +27,7 @@ class MockEnv:
 @pytest.fixture
 async def db():
     """Fresh database for each test"""
-    database = FaithfulMockD1Database()
+    database = MockD1Database()
     # Initialize schema using create_table
     await User.create_table(database)
     await MagicLink.create_table(database)
@@ -242,71 +241,7 @@ class TestAuthService:
         assert updated_user.email == email  # Original email unchanged
 
 
-class TestEmailIntegration:
-    """Test email sender integration"""
-
-    def test_get_email_sender_returns_mock_in_test(self):
-        """Test that we get MockEmailSender in test environment"""
-        env = MockEnv()
-        sender = get_email_sender(env)
-
-        assert isinstance(sender, MockEmailSender)
-
-    def test_get_email_sender_with_override(self):
-        """Test forcing mock sender"""
-        env = MockEnv()
-        env.ENVIRONMENT = "production"
-
-        # Force mock despite production env
-        sender = get_email_sender(env, use_mock=True)
-        assert isinstance(sender, MockEmailSender)
-
-    @pytest.mark.asyncio
-    async def test_mock_email_sender_captures_emails(self):
-        """Test that MockEmailSender captures sent emails"""
-        sender = MockEmailSender()
-
-        message = EmailMessage(
-            to=["test@example.com"],
-            subject="Test Email",
-            body_text="This is a test",
-        )
-
-        result = await sender.send_email(message)
-
-        assert result.success is True
-        assert result.message_id is not None
-        assert len(sender.sent_emails) == 1
-        assert sender.sent_emails[0].to == ["test@example.com"]
-
-    @pytest.mark.asyncio
-    async def test_mock_email_sender_bulk_send(self):
-        """Test bulk email sending"""
-        sender = MockEmailSender()
-
-        messages = [
-            EmailMessage(to=[f"user{i}@example.com"], subject=f"Email {i}", body_text="Test")
-            for i in range(3)
-        ]
-
-        results = await sender.send_bulk_email(messages)
-
-        assert len(results) == 3
-        assert all(r.success for r in results)
-        assert len(sender.sent_emails) == 3
-
-    @pytest.mark.asyncio
-    async def test_mock_email_sender_failure_simulation(self):
-        """Test simulating email send failures"""
-        sender = MockEmailSender()
-        sender.should_fail = True
-
-        message = EmailMessage(
-            to=["test@example.com"], subject="Test", body_text="Test"
-        )
-
-        result = await sender.send_email(message)
-
-        assert result.success is False
-        assert result.error is not None
-        assert len(sender.sent_emails) == 0  # Not captured on failure
+# NOTE: TestEmailIntegration tests removed because Kinglet 1.8.3 changed from
+# kinglet.email (with EmailMessage, get_email_sender) to kinglet.ses (with send_email).
+# The email functionality is tested via integration tests in test_api.py and test_workflows.py
+# which test the actual magic link flow end-to-end.

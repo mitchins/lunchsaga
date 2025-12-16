@@ -25,7 +25,7 @@ test.describe('Team Dashboard', () => {
       }
     }
     
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('roster tab renders list of members', async ({ page }) => {

@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 import jwt
 
-from kinglet.email import EmailMessage, get_email_sender
+from kinglet.ses import send_email
 from models import MagicLink, User
 
 
@@ -42,8 +42,8 @@ class AuthService:
         return secrets.token_urlsafe(32)
 
     @staticmethod
-    def _create_magic_link_email(email: str, code: str, env) -> EmailMessage:
-        """Create magic link email message with templates"""
+    def _get_email_body(code: str) -> tuple[str, str]:
+        """Create magic link email message body (text and HTML)"""
         body_text = f"Your login code is: {code}\n\nThis code will expire in 15 minutes."
         
         body_html = f"""
@@ -56,13 +56,7 @@ class AuthService:
         </html>
         """
         
-        return EmailMessage(
-            to=[email],
-            subject="Your LunchSaga Login Code",
-            body_text=body_text,
-            body_html=body_html,
-            from_address=getattr(env, "EMAIL_FROM_ADDRESS", "noreply@lunchsaga.app"),
-        )
+        return body_text, body_html
 
     @classmethod
     async def send_magic_link(cls, db, email: str, env) -> dict:
@@ -87,9 +81,17 @@ class AuthService:
         )
 
         # Send email with magic link code
-        email_sender = get_email_sender(env)
-        email_message = cls._create_magic_link_email(email, code, env)
-        await email_sender.send_email(email_message)
+        body_text, body_html = cls._get_email_body(code)
+        from_address = getattr(env, "EMAIL_FROM_ADDRESS", "noreply@lunchsaga.app")
+        
+        await send_email(
+            env,
+            from_email=from_address,
+            to=[email],
+            subject="Your LunchSaga Login Code",
+            body_text=body_text,
+            body_html=body_html,
+        )
 
         # In development, also log for convenience
         environment = getattr(env, "ENVIRONMENT", "development")

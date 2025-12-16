@@ -7,8 +7,10 @@ describe('cn utility', () => {
   });
 
   it('handles conditional classes', () => {
-    expect(cn('foo', false && 'bar', 'baz')).toBe('foo baz');
-    expect(cn('foo', true && 'bar')).toBe('foo bar');
+    const shouldInclude = false;
+    const shouldInclude2 = true;
+    expect(cn('foo', shouldInclude && 'bar', 'baz')).toBe('foo baz');
+    expect(cn('foo', shouldInclude2 && 'bar')).toBe('foo bar');
   });
 
   it('merges tailwind classes correctly', () => {

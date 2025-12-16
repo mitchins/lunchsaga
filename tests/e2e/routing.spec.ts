@@ -41,13 +41,13 @@ test.describe('Routing Robustness', () => {
 
     // Navigate to a specific page
     await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const urlBeforeRefresh = page.url();
 
     // Refresh the page
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const urlAfterRefresh = page.url();
 

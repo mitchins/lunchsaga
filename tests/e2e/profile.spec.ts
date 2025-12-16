@@ -52,7 +52,7 @@ test.describe('Profile & Badges', () => {
       await page.goto('/profile/mock-member-1');
     }
     
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Look for member name or profile info
     const nameElement = page.locator('h1, h2, [class*="name"]').filter({
@@ -76,7 +76,7 @@ test.describe('Profile & Badges', () => {
       await page.goto('/profile/mock-member-1');
     }
     
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Look for badges section
     const badgesSection = page.getByText(/badge|achievement|award/i);
@@ -101,7 +101,7 @@ test.describe('Profile & Badges', () => {
       await page.goto('/profile/mock-member-1');
     }
     
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Find a badge to interact with
     const badgeElement = page.locator('[class*="badge"], [data-testid*="badge"]').or(
@@ -137,7 +137,7 @@ test.describe('Profile & Badges', () => {
       await page.goto('/profile/mock-member-1');
     }
     
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Look for stats like points, wins, picks, etc.
     const statsText = page.locator('text=/points|wins|picks|votes|total/i');
