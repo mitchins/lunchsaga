@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "LunchSaga - Team lunch coordination app"
 requires-python = ">=3.12"
 dependencies = [
-    "kinglet>=1.7.0",
+    "kinglet>=1.8.3",
     "pyjwt>=2.8.0",
 ]
 

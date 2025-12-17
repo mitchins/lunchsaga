@@ -1,4 +1,4 @@
-import { Page, ConsoleMessage, expect } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 import { isRouteAllowed } from '@/utils/navigation';
 
 /**
@@ -9,21 +9,11 @@ import { isRouteAllowed } from '@/utils/navigation';
 
 /**
  * Performs a quick login using mock credentials.
- * This navigates through the login flow automatically and extracts the magic code.
+ * Uses the fixed magic code from the mock API (always '000000' for E2E tests).
  */
 /* istanbul ignore next */
 export async function quickLogin(page: Page, email = 'test@example.com'): Promise<void> {
-  // Listen for console messages to catch the magic link code
-  let magicCode = '';
-  const consoleHandler = (msg: ConsoleMessage) => {
-    const text = msg.text();
-    const match = text.match(/Magic link code.*: ([A-Z0-9]+)/);
-    if (match) {
-      magicCode = match[1];
-    }
-  };
-  
-  page.on('console', consoleHandler);
+  const MOCK_MAGIC_CODE = '000000'; // Fixed code used by mock API
   
   await page.goto('/');
   
@@ -32,23 +22,19 @@ export async function quickLogin(page: Page, email = 'test@example.com'): Promis
     await emailInput.fill(email);
     const submitButton = page.getByRole('button', { name: /continue|send|sign in|login/i }).first();
     await submitButton.click();
-    await page.waitForTimeout(1500);
     
+    // Wait for code input to appear
     const codeInput = page.getByRole('textbox', { name: /code|verify/i });
-    if (await codeInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      if (magicCode) {
-        await codeInput.fill(magicCode);
-        const verifyButton = page.getByRole('button', { name: /verify|confirm/i }).first();
-        await verifyButton.click();
-        await page.waitForTimeout(1000);
-      }
-    }
+    await codeInput.waitFor({ state: 'visible', timeout: 5000 });
+    
+    // Fill in the mock code
+    await codeInput.fill(MOCK_MAGIC_CODE);
+    const verifyButton = page.getByRole('button', { name: /verify|confirm/i }).first();
+    await verifyButton.click();
   }
   
-  // Remove console listener
-  page.off('console', consoleHandler);
-  
-  await page.waitForLoadState('networkidle');
+  // Wait for navigation to complete - use domcontentloaded instead of networkidle
+  await page.waitForLoadState('domcontentloaded');
 }
 
 /**
@@ -59,7 +45,7 @@ export async function selectFirstTeam(page: Page) {
   const teamCard = page.locator('[role="button"]').filter({ hasText: /team/i }).first();
   if (await teamCard.isVisible({ timeout: 2000 }).catch(() => false)) {
     await teamCard.click();
-    await page.waitForTimeout(500);
+    await page.waitForLoadState('domcontentloaded');
   }
 }
 
@@ -68,8 +54,7 @@ export async function selectFirstTeam(page: Page) {
  */
 /* istanbul ignore next */
 export async function waitForPageIdle(page: Page) {
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(300); // Small buffer for animations
+  await page.waitForLoadState('domcontentloaded');
 }
 
 /**
@@ -84,7 +69,6 @@ export async function closeToasts(page: Page) {
     const toast = toasts.nth(i);
     if (await toast.isVisible().catch(() => false)) {
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(100);
     }
   }
 }
@@ -94,7 +78,14 @@ export async function closeToasts(page: Page) {
  */
 export async function navigateAndWait(page: Page, path: string): Promise<void> {
   await page.goto(path);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
+  
+  // For team routes, wait for member content to load
+  if (path.includes('test-team-001')) {
+    await page.waitForSelector('h3, text=/[A-Z][a-z]+/', { timeout: 10000 }).catch(() => {
+      // Content may not have loaded, but don't fail
+    });
+  }
 }
 
 /**

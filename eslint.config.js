@@ -2,7 +2,18 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 
 export default [
-  { ignores: ['node_modules', 'dist', 'coverage', 'dist/**', 'build/**'] },
+  { 
+    ignores: [
+      'node_modules', 
+      'dist', 
+      'coverage', 
+      'dist/**', 
+      'build/**',
+      'api/**',  // Ignore Python API directory
+      '**/.venv/**',  // Ignore Python virtual environments
+      '**/.venv-workers/**',
+    ] 
+  },
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
@@ -44,6 +55,18 @@ export default [
       'no-debugger': 'warn',
       'prefer-const': 'warn',
       'no-var': 'error'
+    }
+  },
+  {
+    files: ['**/*.mjs', 'tests/e2e/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        Buffer: 'readonly',
+        console: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly'
+      }
     }
   }
 ]

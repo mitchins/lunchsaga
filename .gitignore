@@ -45,9 +45,12 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+.coverage
+htmlcov/
 
 # Cloudflare Workers
 .wrangler/
 
 # Temp scripts
 start-dev.sh
+python_modules/

@@ -68,6 +68,7 @@ function transformPeriod(p: APILunchPeriod): LunchPeriod {
 
 function AppRouter() {
   const navigate = useNavigate()
+  const { teamId: urlTeamId } = useParams<{ teamId: string }>()
   
   // Auth state
   const [user, setUser] = useState<User | null>(null)
@@ -76,13 +77,15 @@ function AppRouter() {
   
   // Team state
   const [teams, setTeams] = useState<Team[]>([])
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
   const [members, setMembers] = useState<TeamMember[]>([])
   
   // Voting state
   const [currentPeriod, setCurrentPeriod] = useState<LunchPeriod | null>(null)
   const [history, setHistory] = useState<LunchPeriod[]>([])
   const [isHolidayMode, setIsHolidayMode] = useState(false)
+
+  // Use URL param if available, otherwise null
+  const selectedTeamId = urlTeamId || null
 
   // Derived state
   const selectedTeam = selectedTeamId ? teams.find((t) => t.id === selectedTeamId) : null
@@ -180,8 +183,7 @@ function AppRouter() {
   }
 
   const handleSelectTeam = (team: Team) => {
-    setSelectedTeamId(team.id)
-    navigate('/dashboard')
+    navigate(`/dashboard/${team.id}`)
   }
 
   const handleCreateTeam = async (team: Team) => {
@@ -203,9 +205,8 @@ function AppRouter() {
       }
       
       setTeams((prev) => [...prev, transformedTeam])
-      setSelectedTeamId(newTeam.id)
       toast.success(`${newTeam.emoji} Fellowship ${newTeam.name} has been forged!`)
-      navigate('/dashboard')
+      navigate(`/dashboard/${newTeam.id}`)
     } catch (error) {
       console.error('Failed to create team:', error)
       toast.error('Failed to create team')
@@ -227,9 +228,8 @@ function AppRouter() {
       }
       
       setTeams((prev) => [...prev, transformedTeam])
-      setSelectedTeamId(team.id)
       toast.success(`You have joined the ${team.emoji} ${team.name} fellowship!`)
-      navigate('/dashboard')
+      navigate(`/dashboard/${team.id}`)
     } catch (error) {
       console.error('Failed to join team:', error)
       toast.error('Invalid invite code')
@@ -241,7 +241,7 @@ function AppRouter() {
   }
 
   const handleTeamSwitch = (teamId: string) => {
-    setSelectedTeamId(teamId)
+    navigate(`/dashboard/${teamId}`)
   }
 
   const handleAddMember = async (name: string) => {
@@ -324,16 +324,14 @@ function AppRouter() {
   }
 
   const handleCompletePeriod = async () => {
-    if (!currentPeriod) return
+    if (!currentPeriod || !selectedTeamId) return
     
     try {
       await votingAPI.completePeriod(currentPeriod.id)
       toast.success('🎉 The chapter concludes!')
       
-      if (selectedTeamId) {
-        await loadTeamData(selectedTeamId)
-      }
-      navigate('/summary')
+      await loadTeamData(selectedTeamId)
+      navigate(`/summary/${selectedTeamId}`)
     } catch (error) {
       console.error('Failed to complete period:', error)
       toast.error('Failed to complete voting period')
@@ -347,7 +345,7 @@ function AppRouter() {
       const { period } = await votingAPI.startPeriod(selectedTeamId)
       setCurrentPeriod(transformPeriod(period))
       toast.success('A new chapter begins!')
-      navigate('/vote')
+      navigate(`/vote/${selectedTeamId}`)
     } catch (error) {
       console.error('Failed to start period:', error)
       toast.error('Failed to start new period')
@@ -401,11 +399,11 @@ function AppRouter() {
   const currentUserMember = teamMembers.find((m) => m.userId === user.id)
 
   const ProfileRoute = () => {
-    const { memberId } = useParams<{ memberId: string }>()
+    const { teamId: profileTeamId, memberId } = useParams<{ teamId: string; memberId: string }>()
     const member = teamMembers.find((m) => m.id === memberId)
     
     if (!member) {
-      return <Navigate to="/dashboard" replace />
+      return <Navigate to={`/dashboard/${profileTeamId}`} replace />
     }
 
     const isOwnProfile = member.userId === user?.id
@@ -439,7 +437,7 @@ function AppRouter() {
         }
       />
       <Route
-        path="/dashboard"
+        path="/dashboard/:teamId"
         element={
           selectedTeam ? (
             <TeamDashboardScreen
@@ -455,9 +453,9 @@ function AppRouter() {
               onRemoveMember={handleRemoveMember}
               onToggleHoliday={handleToggleHoliday}
               onToggleMemberAway={handleToggleMemberAway}
-              onNavigateToVote={() => navigate('/vote')}
-              onNavigateToHistory={() => navigate('/summary')}
-              onNavigateToProfile={(memberId) => navigate(`/profile/${memberId}`)}
+              onNavigateToVote={() => navigate(`/vote/${selectedTeamId}`)}
+              onNavigateToHistory={() => navigate(`/summary/${selectedTeamId}`)}
+              onNavigateToProfile={(memberId) => navigate(`/profile/${selectedTeamId}/${memberId}`)}
             />
           ) : (
             <Navigate to="/teams" replace />
@@ -465,7 +463,7 @@ function AppRouter() {
         }
       />
       <Route
-        path="/vote"
+        path="/vote/:teamId"
         element={
           <VotingScreen
             period={currentPeriod}
@@ -482,18 +480,18 @@ function AppRouter() {
         }
       />
       <Route
-        path="/leaderboard"
+        path="/leaderboard/:teamId"
         element={
           <LeaderboardScreen
             members={teamMembers}
             onBack={handleBack}
-            onSelectMember={(memberId) => navigate(`/profile/${memberId}`)}
+            onSelectMember={(memberId) => navigate(`/profile/${selectedTeamId}/${memberId}`)}
           />
         }
       />
-      <Route path="/profile/:memberId" element={<ProfileRoute />} />
+      <Route path="/profile/:teamId/:memberId" element={<ProfileRoute />} />
       <Route
-        path="/settings"
+        path="/settings/:teamId"
         element={
           selectedTeam ? (
             <SettingsScreen
@@ -508,7 +506,7 @@ function AppRouter() {
         }
       />
       <Route
-        path="/summary"
+        path="/summary/:teamId"
         element={
           <WeeklySummaryScreen
             history={history}
@@ -518,7 +516,7 @@ function AppRouter() {
         }
       />
       <Route
-        path="/picker"
+        path="/picker/:teamId"
         element={
           <WeeklyPickerScreen
             members={teamMembers}
