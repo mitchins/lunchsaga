@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { quickLogin, navigateAndWait } from './helpers';
+import { test, expect } from './fixtures';
+import { navigateAndWait } from './helpers';
 
 /**
  * Leaderboard Screen Tests
@@ -9,40 +9,41 @@ import { quickLogin, navigateAndWait } from './helpers';
  */
 
 test.describe('Leaderboard Screen', () => {
-  test.beforeEach(async ({ page }) => {
-    await quickLogin(page);
-  });
 
-  test('leaderboard loads and displays mock data', async ({ page }) => {
-    await navigateAndWait(page, '/leaderboard');
+  test('leaderboard loads and displays mock data', async ({ authenticatedPage: page }) => {
+    await navigateAndWait(page, '/leaderboard/test-team-001');
     
     // Verify URL
-    expect(page.url()).toContain('/leaderboard');
+    expect(page.url()).toContain('/leaderboard/test-team-001');
     
     // Look for leaderboard title or header
     const header = page.getByText(/leaderboard|ranking|leader|top/i);
     await expect(header.first()).toBeVisible();
   });
 
-  test('leaderboard shows member entries', async ({ page }) => {
-    await page.goto('/leaderboard');
-    await page.waitForLoadState('domcontentloaded');
+  test('leaderboard shows member entries', async ({ authenticatedPage: page }) => {
+    await page.goto('/leaderboard/test-team-001');
     
-    // Look for member names or entries
-    // Leaderboard entries might be in a list, table, or cards
-    const entries = page.locator('li, tr, article, [class*="entry"]').filter({
-      has: page.locator('text=/[A-Z][a-z]+/') // Names
+    // Wait for member content to appear - members should be loaded via API or cache
+    // Look for the reputation score text which appears in member cards
+    await page.waitForSelector('text=/reputation/i', { timeout: 10000 }).catch(() => {
+      console.warn('Member content did not appear');
     });
     
-    const entryCount = await entries.count();
+    // Look for member entries in cards/lists
+    const entryCount = await page.locator('h3').count();
     
-    // Should have at least one entry
+    // Should have at least one member name (rendered in h3 tags in Card)
     expect(entryCount).toBeGreaterThan(0);
   });
 
-  test('leaderboard entries display scores or stats', async ({ page }) => {
-    await page.goto('/leaderboard');
-    await page.waitForLoadState('domcontentloaded');
+  test('leaderboard entries display scores or stats', async ({ authenticatedPage: page }) => {
+    await page.goto('/leaderboard/test-team-001');
+    
+    // Wait for member content to appear
+    await page.waitForSelector('text=/reputation/i', { timeout: 10000 }).catch(() => {
+      console.warn('Member content did not appear');
+    });
     
     // Look for numerical values (scores, points, wins, etc.)
     const numbers = page.locator('text=/\\d+/');
@@ -52,8 +53,8 @@ test.describe('Leaderboard Screen', () => {
     expect(numberCount).toBeGreaterThan(0);
   });
 
-  test('badges or icons render on leaderboard', async ({ page }) => {
-    await page.goto('/leaderboard');
+  test('badges or icons render on leaderboard', async ({ authenticatedPage: page }) => {
+    await page.goto('/leaderboard/test-team-001');
     await page.waitForLoadState('domcontentloaded');
     
     // Look for badges, icons, or emoji
@@ -68,8 +69,8 @@ test.describe('Leaderboard Screen', () => {
     expect(badgeCount).toBeGreaterThanOrEqual(0);
   });
 
-  test('leaderboard appears sorted correctly', async ({ page }) => {
-    await page.goto('/leaderboard');
+  test('leaderboard appears sorted correctly', async ({ authenticatedPage: page }) => {
+    await page.goto('/leaderboard/test-team-001');
     await page.waitForLoadState('domcontentloaded');
     
     // Get all numeric scores/points visible
@@ -94,8 +95,8 @@ test.describe('Leaderboard Screen', () => {
     }
   });
 
-  test('clicking member entry navigates to profile', async ({ page }) => {
-    await page.goto('/leaderboard');
+  test('clicking member entry navigates to profile', async ({ authenticatedPage: page }) => {
+    await page.goto('/leaderboard/test-team-001');
     await page.waitForLoadState('domcontentloaded');
     
     // Find clickable member entry
@@ -113,8 +114,8 @@ test.describe('Leaderboard Screen', () => {
     }
   });
 
-  test('back navigation works from leaderboard', async ({ page }) => {
-    await page.goto('/leaderboard');
+  test('back navigation works from leaderboard', async ({ authenticatedPage: page }) => {
+    await page.goto('/leaderboard/test-team-001');
     await page.waitForLoadState('domcontentloaded');
     
     const backButton = page.getByRole('button', { name: /back|return|←/i });
@@ -124,7 +125,7 @@ test.describe('Leaderboard Screen', () => {
       await page.waitForTimeout(500);
       
       // Should navigate away from leaderboard
-      expect(page.url()).not.toContain('/leaderboard');
+      expect(page.url()).not.toContain('/leaderboard/test-team-001');
     }
   });
 });

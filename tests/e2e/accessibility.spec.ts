@@ -1,6 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test as baseTest, expect as baseExpect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
-import { quickLogin, navigateAndWait } from './helpers';
+import { navigateAndWait, quickLogin } from './helpers';
 
 /**
  * Accessibility Tests
@@ -10,7 +11,7 @@ import { quickLogin, navigateAndWait } from './helpers';
  */
 
 test.describe('Accessibility', () => {
-  test('login screen has no critical accessibility violations', async ({ page }) => {
+  baseTest('login screen has no critical accessibility violations', async ({ page }) => {
     await page.goto('/');
     
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -27,12 +28,12 @@ test.describe('Accessibility', () => {
       console.log(`Found ${accessibilityScanResults.violations.length} accessibility issues (${criticalViolations.length} critical)`);
     }
     
-    expect(criticalViolations).toHaveLength(0);
+    baseExpect(criticalViolations).toHaveLength(0);
   });
 
-  test('dashboard has no critical accessibility violations', async ({ page }) => {
-    await quickLogin(page);
-    await navigateAndWait(page, '/dashboard');
+  test('dashboard has no critical accessibility violations', async ({ authenticatedPage: page }) => {
+    // Navigate directly to dashboard (already authenticated)
+    await navigateAndWait(page, '/dashboard/test-team-001');
     
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
@@ -51,9 +52,9 @@ test.describe('Accessibility', () => {
     expect(criticalViolations).toHaveLength(0);
   });
 
-  test('voting screen has no critical accessibility violations', async ({ page }) => {
+  test('voting screen has no critical accessibility violations', async ({ authenticatedPage: page }) => {
     await quickLogin(page);
-    await navigateAndWait(page, '/vote');
+    await navigateAndWait(page, '/vote/test-team-001');
     
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
@@ -72,9 +73,9 @@ test.describe('Accessibility', () => {
     expect(criticalViolations).toHaveLength(0);
   });
 
-  test('buttons have accessible names', async ({ page }) => {
+  test('buttons have accessible names', async ({ authenticatedPage: page }) => {
     await quickLogin(page);
-    await navigateAndWait(page, '/dashboard');
+    await navigateAndWait(page, '/dashboard/test-team-001');
     
     // Get all buttons
     const buttons = page.getByRole('button');
@@ -93,7 +94,7 @@ test.describe('Accessibility', () => {
     expect(text || ariaLabel || ariaLabelledBy).toBeTruthy();
   });
 
-  test('form inputs have labels', async ({ page }) => {
+  test('form inputs have labels', async ({ authenticatedPage: page }) => {
     await page.goto('/');
     
     // Get all textboxes
@@ -113,10 +114,10 @@ test.describe('Accessibility', () => {
     }
   });
 
-  test.skip('main navigation elements use semantic HTML', async ({ page }) => {
+  test.skip('main navigation elements use semantic HTML', async ({ authenticatedPage: page }) => {
     // This test is skipped for now as the app uses modern React patterns with ARIA roles
     // rather than traditional semantic HTML5 elements
-    await navigateAndWait(page, '/dashboard');
+    await navigateAndWait(page, '/dashboard/test-team-001');
     
     // Check for semantic landmarks
     const main = page.locator('main');
@@ -138,9 +139,9 @@ test.describe('Accessibility', () => {
     expect(hasMain || hasNav || hasHeader || hasArticle || roles > 5).toBeTruthy();
   });
 
-  test('interactive elements are keyboard accessible', async ({ page }) => {
+  test('interactive elements are keyboard accessible', async ({ authenticatedPage: page }) => {
     await quickLogin(page);
-    await navigateAndWait(page, '/dashboard');
+    await navigateAndWait(page, '/dashboard/test-team-001');
     
     // Try to tab through the page
     await page.keyboard.press('Tab');
@@ -152,9 +153,9 @@ test.describe('Accessibility', () => {
     expect(hasFocus).toBeTruthy();
   });
 
-  test('switch controls have proper ARIA roles', async ({ page }) => {
+  test('switch controls have proper ARIA roles', async ({ authenticatedPage: page }) => {
     await quickLogin(page);
-    await navigateAndWait(page, '/dashboard');
+    await navigateAndWait(page, '/dashboard/test-team-001');
     
     // Look for switch elements (holiday mode toggle)
     const switches = page.getByRole('switch');
@@ -170,9 +171,9 @@ test.describe('Accessibility', () => {
     }
   });
 
-  test('leaderboard has proper heading hierarchy', async ({ page }) => {
+  test('leaderboard has proper heading hierarchy', async ({ authenticatedPage: page }) => {
     await quickLogin(page);
-    await navigateAndWait(page, '/leaderboard');
+    await navigateAndWait(page, '/leaderboard/test-team-001');
     
     // Check for headings
     const h1 = page.locator('h1');

@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { quickLogin, navigateAndEnsureVisible, isValidPath } from './helpers';
+import { test, expect } from './fixtures';
+import { navigateAndEnsureVisible, isValidPath, quickLogin } from './helpers';
 
 /**
  * Routing Robustness Tests
@@ -8,16 +8,16 @@ import { quickLogin, navigateAndEnsureVisible, isValidPath } from './helpers';
  */
 
 test.describe('Routing Robustness', () => {
-  const directRoutes = ['/dashboard', '/vote', '/leaderboard', '/settings', '/summary', '/profile/test-member-123', '/teams'];
+  const directRoutes = ['/dashboard/test-team-001', '/vote/test-team-001', '/leaderboard/test-team-001', '/settings/test-team-001', '/summary/test-team-001', '/profile/test-team-001/test-member-123', '/teams'];
 
   for (const path of directRoutes) {
-    test(`direct navigation to ${path} renders a page`, async ({ page }) => {
+    test(`direct navigation to ${path} renders a page`, async ({ authenticatedPage: page }) => {
       await navigateAndEnsureVisible(page, path);
-      expect(isValidPath(page.url(), ['/', path, '/login', '/teams', '/dashboard'])).toBeTruthy();
+      expect(isValidPath(page.url(), ['/', path, '/login', '/teams', '/dashboard/test-team-001'])).toBeTruthy();
     });
   }
 
-  test('invalid route handling', async ({ page }) => {
+  test('invalid route handling', async ({ authenticatedPage: page }) => {
     await navigateAndEnsureVisible(page, '/this-route-does-not-exist-12345');
 
     const url = page.url();
@@ -35,12 +35,12 @@ test.describe('Routing Robustness', () => {
     expect(has404Text || redirectedToHome || url.includes('/')).toBeTruthy();
   });
 
-  test('navigation state persists on page refresh', async ({ page }) => {
+  test('navigation state persists on page refresh', async ({ authenticatedPage: page }) => {
     // Quick login
     await quickLogin(page);
 
     // Navigate to a specific page
-    await page.goto('/leaderboard');
+    await page.goto('/leaderboard/test-team-001');
     await page.waitForLoadState('domcontentloaded');
 
     const urlBeforeRefresh = page.url();
@@ -56,20 +56,20 @@ test.describe('Routing Robustness', () => {
     expect(urlAfterRefresh).toBeTruthy();
   });
 
-  test('deep link to teams page works', async ({ page }) => {
+  test('deep link to teams page works', async ({ authenticatedPage: page }) => {
     await navigateAndEnsureVisible(page, '/teams');
 
     const body = page.locator('body');
     await expect(body).toBeVisible();
   });
 
-  test('browser back button works correctly', async ({ page }) => {
+  test('browser back button works correctly', async ({ authenticatedPage: page }) => {
     await quickLogin(page);
 
     // Navigate to dashboard then leaderboard
-    await page.goto('/dashboard');
+    await page.goto('/dashboard/test-team-001');
     await page.waitForTimeout(500);
-    await page.goto('/leaderboard');
+    await page.goto('/leaderboard/test-team-001');
     await page.waitForTimeout(500);
 
     const urlBeforeBack = page.url();
@@ -84,13 +84,13 @@ test.describe('Routing Robustness', () => {
     expect(urlAfterBack).not.toBe(urlBeforeBack);
   });
 
-  test('browser forward button works correctly', async ({ page }) => {
+  test('browser forward button works correctly', async ({ authenticatedPage: page }) => {
     await quickLogin(page);
 
     // Navigate forward and back
-    await page.goto('/dashboard');
+    await page.goto('/dashboard/test-team-001');
     await page.waitForTimeout(500);
-    await page.goto('/leaderboard');
+    await page.goto('/leaderboard/test-team-001');
     await page.waitForTimeout(500);
     await page.goBack();
     await page.waitForTimeout(500);

@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { quickLogin, navigateAndWait } from './helpers';
+import { test, expect } from './fixtures';
+import { navigateAndWait } from './helpers';
 
 /**
  * Voting Flow Tests
@@ -9,24 +9,21 @@ import { quickLogin, navigateAndWait } from './helpers';
  */
 
 test.describe('Voting Flow', () => {
-  test.beforeEach(async ({ page }) => {
-    await quickLogin(page);
-  });
 
-  test('vote screen renders when navigated to', async ({ page }) => {
+  test('vote screen renders when navigated to', async ({ authenticatedPage: page }) => {
     // Navigate to vote screen
-    await navigateAndWait(page, '/vote');
+    await navigateAndWait(page, '/vote/test-team-001');
     
     // Check if we're on the vote screen
-    expect(page.url()).toContain('/vote');
+    expect(page.url()).toContain('/vote/test-team-001');
     
     // Look for voting-related content
     const votingContent = page.getByText(/vote|voting|pick|choose/i);
     await expect(votingContent.first()).toBeVisible();
   });
 
-  test('vote screen shows venue options or member info', async ({ page }) => {
-    await navigateAndWait(page, '/vote');
+  test('vote screen shows venue options or member info', async ({ authenticatedPage: page }) => {
+    await navigateAndWait(page, '/vote/test-team-001');
     
     // Look for venue options, member cards, or voting buttons
     // The screen might show different states based on period status
@@ -49,8 +46,8 @@ test.describe('Voting Flow', () => {
     expect(hasVoteButtons || hasStartButton || hasContent).toBeTruthy();
   });
 
-  test('clicking vote buttons updates UI state', async ({ page }) => {
-    await navigateAndWait(page, '/vote');
+  test('clicking vote buttons updates UI state', async ({ authenticatedPage: page }) => {
+    await navigateAndWait(page, '/vote/test-team-001');
     
     // Start the week if needed
     const startButton = page.getByRole('button', { name: /start|begin|chapter/i }).first();
@@ -82,12 +79,12 @@ test.describe('Voting Flow', () => {
       const toastVisible = await toast.first().isVisible({ timeout: 2000 }).catch(() => false);
       
       // Test passes if toast appeared or if the page is still functional
-      expect(toastVisible || page.url().includes('/vote')).toBeTruthy();
+      expect(toastVisible || page.url().includes('/vote/test-team-001')).toBeTruthy();
     }
   });
 
-  test('back navigation works from vote screen', async ({ page }) => {
-    await navigateAndWait(page, '/vote');
+  test('back navigation works from vote screen', async ({ authenticatedPage: page }) => {
+    await navigateAndWait(page, '/vote/test-team-001');
     
     // Look for back button
     const backButton = page.getByRole('button', { name: /back|return|←/i }).or(
@@ -111,12 +108,12 @@ test.describe('Voting Flow', () => {
       await page.waitForTimeout(500);
       
       // Should navigate somewhere
-      expect(page.url()).not.toContain('/vote');
+      expect(page.url()).not.toContain('/vote/test-team-001');
     }
   });
 
-  test('vote screen handles empty/holiday state', async ({ page }) => {
-    await navigateAndWait(page, '/vote');
+  test('vote screen handles empty/holiday state', async ({ authenticatedPage: page }) => {
+    await navigateAndWait(page, '/vote/test-team-001');
     
     // Check for empty state message or start button
     const emptyStateText = page.getByText(/awaits|paused|holiday|begin/i);

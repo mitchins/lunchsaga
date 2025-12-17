@@ -8,6 +8,7 @@
  */
 
 import http from 'http';
+import { randomUUID } from 'crypto';
 
 // In-memory storage
 const mockUsers = {};
@@ -44,14 +45,14 @@ function sendJSON(res, data, status = 200) {
 
 // Mock data creators
 const createMockUser = (email) => ({
-  id: `user-${Date.now()}`,
+  id: `user-${randomUUID()}`,
   email,
   name: email.split('@')[0],
   avatar: null,
 });
 
 const createMockTeam = (name, ownerId) => ({
-  id: `team-${Date.now()}`,
+  id: `team-${randomUUID()}`,
   name,
   emoji: '🍕',
   color: '#3b82f6',
@@ -61,8 +62,9 @@ const createMockTeam = (name, ownerId) => ({
   createdAt: Date.now(),
 });
 
+let memberCounter = 0;
 const createMockMember = (teamId, userId, name) => ({
-  id: `member-${Date.now()}`,
+  id: `member-${randomUUID()}`,
   teamId,
   userId,
   name,
@@ -83,6 +85,52 @@ function getUserFromToken(authHeader) {
   try {
     const token = authHeader.substring(7);
     const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
+    
+    // Auto-create user if token is valid but user doesn't exist (for pre-minted tokens)
+    if (!mockUsers[decoded.email] && decoded.email && decoded.userId) {
+      const user = {
+        id: decoded.userId,
+        email: decoded.email,
+        name: decoded.email.split('@')[0],
+        avatar: null,
+      };
+      mockUsers[decoded.email] = user;
+      
+      // Auto-create a default team with mock members for E2E tests
+      // Use a predictable team ID so tests can navigate directly with teamId in URL
+      const team = {
+        id: 'test-team-001',
+        name: 'Test Team',
+        emoji: '🍕',
+        color: '#3b82f6',
+        ownerId: user.id,
+        inviteCode: 'TEST001',
+        isHolidayMode: false,
+        createdAt: Date.now(),
+      };
+      mockTeams[team.id] = team;
+      
+      // Create current user as team member
+      const currentMember = createMockMember(team.id, user.id, user.name);
+      mockMembers[currentMember.id] = currentMember;
+      
+      // Create additional mock members for testing
+      for (let i = 1; i <= 4; i++) {
+        const mockUser = {
+          id: `mock-user-${i}`,
+          email: `member${i}@test.com`,
+          name: `Team Member ${i}`,
+          avatar: null,
+        };
+        const member = createMockMember(team.id, mockUser.id, mockUser.name);
+        member.points = 100 + (i * 50);
+        member.reputationScore = 50 + (i * 10);
+        mockMembers[member.id] = member;
+      }
+      
+      console.log(`[MOCK-API] Created team test-team-001 with ${Object.values(mockMembers).filter(m => m.teamId === 'test-team-001').length} members`);
+    }
+    
     return mockUsers[decoded.email];
   } catch {
     return null;
@@ -217,9 +265,11 @@ async function handleRequest(req, res) {
         // GET /api/teams/:teamId/members
         const team = mockTeams[teamId];
         if (!team) {
+          console.log(`[MOCK-API] Team ${teamId} not found. Available teams:`, Object.keys(mockTeams));
           return sendJSON(res, { error: 'Team not found' }, 404);
         }
         const members = Object.values(mockMembers).filter((m) => m.teamId === teamId);
+        console.log(`[MOCK-API] GET /api/teams/${teamId}/members returned ${members.length} members`);
         return sendJSON(res, { members });
       }
     }

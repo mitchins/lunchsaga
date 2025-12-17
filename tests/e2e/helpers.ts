@@ -79,6 +79,13 @@ export async function closeToasts(page: Page) {
 export async function navigateAndWait(page: Page, path: string): Promise<void> {
   await page.goto(path);
   await page.waitForLoadState('domcontentloaded');
+  
+  // For team routes, wait for member content to load
+  if (path.includes('test-team-001')) {
+    await page.waitForSelector('h3, text=/[A-Z][a-z]+/', { timeout: 10000 }).catch(() => {
+      // Content may not have loaded, but don't fail
+    });
+  }
 }
 
 /**

@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { quickLogin, selectFirstTeam } from './helpers';
+import { test, expect } from './fixtures';
+import { selectFirstTeam } from './helpers';
 
 /**
  * Team Dashboard Tests
@@ -10,35 +10,14 @@ import { quickLogin, selectFirstTeam } from './helpers';
 
 test.describe('Team Dashboard', () => {
   // Helper to navigate to dashboard (assumes mock data is available)
-  test.beforeEach(async ({ page }) => {
-    // Use the helper to log in
-    await quickLogin(page);
-    
-    // Navigate to dashboard if not already there
-    if (!page.url().includes('/dashboard')) {
-      // Try to select a team if on teams page
-      await selectFirstTeam(page);
-      
-      // If still not on dashboard, navigate directly
-      if (!page.url().includes('/dashboard')) {
-        await page.goto('/dashboard');
-      }
-    }
-    
-    await page.waitForLoadState('domcontentloaded');
-  });
 
-  test('roster tab renders list of members', async ({ page }) => {
-    // Look for tabs
-    const rosterTab = page.getByRole('tab', { name: /roster/i });
+  test('roster tab renders list of members', async ({ authenticatedPage: page }) => {
+    await page.goto('/dashboard/test-team-001');
     
-    // If tabs exist, click roster
-    if (await rosterTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await rosterTab.click();
-    }
-    
-    // Wait a moment for content to load
-    await page.waitForTimeout(500);
+    // Wait for member content to appear
+    await page.waitForSelector('h3, text=/[A-Z][a-z]+/', { timeout: 10000 }).catch(() => {
+      console.warn('Member content did not appear');
+    });
     
     // Look for member cards or list items
     // Members might be in cards, list items, or other containers
@@ -50,14 +29,21 @@ test.describe('Team Dashboard', () => {
     await expect(memberElements.first()).toBeVisible();
   });
 
-  test('Up Next indicator is visible on at least one member', async ({ page }) => {
+  test('Up Next indicator is visible on at least one member', async ({ authenticatedPage: page }) => {
+    await page.goto('/dashboard/test-team-001');
+    
+    // Wait for member content to appear
+    await page.waitForSelector('h3, text=/[A-Z][a-z]+/', { timeout: 10000 }).catch(() => {
+      console.warn('Member content did not appear');
+    });
+    
     // Look for "Up Next", "Next", or similar indicator
     const upNextIndicator = page.getByText(/up next|next in|next:|upcoming/i);
     
     await expect(upNextIndicator).toBeVisible();
   });
 
-  test('team switcher dropdown opens and closes', async ({ page }) => {
+  test('team switcher dropdown opens and closes', async ({ authenticatedPage: page }) => {
     // Look for team switcher button/dropdown
     const teamSwitcher = page.getByRole('button', { name: /switch|team/i }).or(
       page.locator('[aria-label*="team"]').or(
@@ -101,7 +87,7 @@ test.describe('Team Dashboard', () => {
     }
   });
 
-  test('holiday mode toggle is present', async ({ page }) => {
+  test('holiday mode toggle is present', async ({ authenticatedPage: page }) => {
     // Look for holiday mode switch
     const holidaySwitch = page.getByRole('switch', { name: /holiday/i }).or(
       page.getByText(/holiday/i).locator('..').getByRole('switch')
@@ -110,7 +96,7 @@ test.describe('Team Dashboard', () => {
     await expect(holidaySwitch).toBeVisible();
   });
 
-  test('member cards are expandable or interactive', async ({ page }) => {
+  test('member cards are expandable or interactive', async ({ authenticatedPage: page }) => {
     // Look for the first member card/element
     const memberCard = page.locator('article, [class*="card"]').filter({
       has: page.locator('text=/[A-Z][a-z]+/')

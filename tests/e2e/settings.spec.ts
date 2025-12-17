@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { quickLogin, navigateAndWait } from './helpers';
+import { test, expect } from './fixtures';
+import { navigateAndWait } from './helpers';
 
 /**
  * Settings / Holiday Mode Tests
@@ -8,23 +8,20 @@ import { quickLogin, navigateAndWait } from './helpers';
  */
 
 test.describe('Settings & Holiday Mode', () => {
-  test.beforeEach(async ({ page }) => {
-    await quickLogin(page);
-  });
 
-  test('settings screen loads when navigated to', async ({ page }) => {
-    await navigateAndWait(page, '/settings');
+  test('settings screen loads when navigated to', async ({ authenticatedPage: page }) => {
+    await navigateAndWait(page, '/settings/test-team-001');
     
     // Verify URL
-    expect(page.url()).toContain('/settings');
+    expect(page.url()).toContain('/settings/test-team-001');
     
     // Look for settings content
     const header = page.getByText(/settings|preferences|configuration/i);
     await expect(header.first()).toBeVisible();
   });
 
-  test('holiday mode toggle switch renders', async ({ page }) => {
-    await navigateAndWait(page, '/settings');
+  test('holiday mode toggle switch renders', async ({ authenticatedPage: page }) => {
+    await navigateAndWait(page, '/settings/test-team-001');
     
     // Look for holiday mode switch
     const holidaySwitch = page.getByRole('switch', { name: /holiday/i }).or(
@@ -34,8 +31,8 @@ test.describe('Settings & Holiday Mode', () => {
     await expect(holidaySwitch).toBeVisible();
   });
 
-  test('holiday mode toggle can be interacted with', async ({ page }) => {
-    await navigateAndWait(page, '/settings');
+  test('holiday mode toggle can be interacted with', async ({ authenticatedPage: page }) => {
+    await navigateAndWait(page, '/settings/test-team-001');
     
     // Find holiday switch
     const holidaySwitch = page.getByRole('switch', { name: /holiday/i }).or(
@@ -62,9 +59,9 @@ test.describe('Settings & Holiday Mode', () => {
     expect(toastVisible || (newState !== initialState)).toBeTruthy();
   });
 
-  test('holiday mode banner appears on dashboard when enabled', async ({ page }) => {
+  test('holiday mode banner appears on dashboard when enabled', async ({ authenticatedPage: page }) => {
     // First, enable holiday mode from settings or dashboard
-    await navigateAndWait(page, '/dashboard');
+    await navigateAndWait(page, '/dashboard/test-team-001');
     
     // Find holiday toggle on dashboard
     const holidaySwitch = page.getByRole('switch', { name: /holiday/i }).or(
@@ -92,8 +89,8 @@ test.describe('Settings & Holiday Mode', () => {
     }
   });
 
-  test('settings screen shows team information', async ({ page }) => {
-    await navigateAndWait(page, '/settings');
+  test('settings screen shows team information', async ({ authenticatedPage: page }) => {
+    await navigateAndWait(page, '/settings/test-team-001');
     
     // Look for team name or emoji
     const teamInfo = page.locator('text=/🎯|🍕|⚡|Team/i');
@@ -102,8 +99,8 @@ test.describe('Settings & Holiday Mode', () => {
     expect(hasTeamInfo).toBeTruthy();
   });
 
-  test('back navigation works from settings', async ({ page }) => {
-    await navigateAndWait(page, '/settings');
+  test('back navigation works from settings', async ({ authenticatedPage: page }) => {
+    await navigateAndWait(page, '/settings/test-team-001');
     
     const backButton = page.getByRole('button', { name: /back|return|←/i });
     
@@ -112,12 +109,12 @@ test.describe('Settings & Holiday Mode', () => {
       await page.waitForTimeout(500);
       
       // Should navigate away from settings
-      expect(page.url()).not.toContain('/settings');
+      expect(page.url()).not.toContain('/settings/test-team-001');
     }
   });
 
-  test('holiday mode persists across navigation', async ({ page }) => {
-    await navigateAndWait(page, '/dashboard');
+  test('holiday mode persists across navigation', async ({ authenticatedPage: page }) => {
+    await navigateAndWait(page, '/dashboard/test-team-001');
     
     // Enable holiday mode
     const holidaySwitch = page.getByRole('switch', { name: /holiday/i });
@@ -131,9 +128,9 @@ test.describe('Settings & Holiday Mode', () => {
       }
       
       // Navigate to another page and back
-      await page.goto('/vote');
+      await page.goto('/vote/test-team-001');
       await page.waitForTimeout(500);
-      await navigateAndWait(page, '/dashboard');
+      await navigateAndWait(page, '/dashboard/test-team-001');
       
       // Holiday mode should still be active
       const stillChecked = await holidaySwitch.getAttribute('aria-checked') === 'true';

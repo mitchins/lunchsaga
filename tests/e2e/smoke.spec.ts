@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test as baseTest, expect } from '@playwright/test';
+import { test, expect as expectAuth } from './fixtures';
 import { quickLogin } from './helpers';
 
 /**
@@ -6,10 +7,12 @@ import { quickLogin } from './helpers';
  * 
  * Basic tests to ensure the app loads and core UI elements are present.
  * Uses role-based locators and semantic queries for robustness.
+ * 
+ * NOTE: Login-related tests use regular `page`, authenticated tests use `authenticatedPage`
  */
 
-test.describe('Application Smoke Tests', () => {
-  test('app loads with header and brand present', async ({ page }) => {
+baseTest.describe('Application Smoke Tests - Unauthenticated', () => {
+  baseTest('app loads with header and brand present', async ({ page }) => {
     await page.goto('/');
     
     // Wait for app to load
@@ -20,7 +23,7 @@ test.describe('Application Smoke Tests', () => {
     await expect(brandElement).toBeVisible();
   });
 
-  test('login screen renders with email input and CTA', async ({ page }) => {
+  baseTest('login screen renders with email input and CTA', async ({ page }) => {
     await page.goto('/');
     
     // Check for email input field
@@ -32,7 +35,7 @@ test.describe('Application Smoke Tests', () => {
     await expect(submitButton).toBeVisible();
   });
 
-  test('navigation to teams dashboard works', async ({ page }) => {
+  baseTest('navigation to teams dashboard works', async ({ page }) => {
     // Use the quickLogin helper which handles magic code extraction
     await quickLogin(page);
     
@@ -43,28 +46,28 @@ test.describe('Application Smoke Tests', () => {
     // Should be on teams or dashboard after login
     expect(currentPath.includes('teams') || currentPath.includes('dashboard')).toBeTruthy();
   });
+});
 
-  test('basic routing - teams page is accessible', async ({ page }) => {
-    // Navigate directly to teams (bypassing login in mock environment)
+test.describe('Application Smoke Tests - Authenticated', () => {
+  test('basic routing - teams page is accessible', async ({ authenticatedPage: page }) => {
+    // Start directly on teams page (already authenticated)
     await page.goto('/teams');
     
-    // In a real scenario, this might redirect to login
-    // For now, check if page loads
     await page.waitForLoadState('domcontentloaded');
     
-    // URL should contain 'teams' or redirect happened
+    // URL should contain 'teams'
     const currentUrl = page.url();
-    expect(currentUrl).toBeTruthy();
+    expect(currentUrl).toContain('teams');
   });
 
-  test('basic routing - dashboard page structure', async ({ page }) => {
-    // Navigate directly to dashboard
-    await page.goto('/dashboard');
+  test('basic routing - dashboard page structure', async ({ authenticatedPage: page }) => {
+    // Navigate directly to dashboard (already authenticated)
+    await page.goto('/dashboard/test-team-001');
     
     await page.waitForLoadState('domcontentloaded');
     
-    // Check if we're on dashboard or redirected to login/teams
+    // Check if we're on dashboard
     const currentUrl = page.url();
-    expect(currentUrl).toBeTruthy();
+    expect(currentUrl).toContain('dashboard');
   });
 });

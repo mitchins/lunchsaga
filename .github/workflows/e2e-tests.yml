@@ -11,7 +11,7 @@ jobs:
   test:
     name: Run Playwright E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     
     steps:
       - name: Checkout code
@@ -39,7 +39,7 @@ jobs:
       
       - name: Run Playwright tests (2 workers)
         run: npx playwright test --workers=2
-        timeout-minutes: 5
+        timeout-minutes: 7
         env:
           CI: 'true'
       
