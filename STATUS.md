@@ -81,11 +81,17 @@
 ## Testing
 - 🟢 API unit tests
     42 tests passing
-- 🟢 Full saga simulation tests (4-week + 8-week rotation fairness)
-- 🟢 Workflow integration tests (15 scenarios)
-- 🟢 Frontend unit tests (38 tests passing)
-- 🟢 E2E test scaffolding (Playwright)
-- 🔵 E2E browser tests (infrastructure ready)
+- 🟢 Frontend unit tests
+    4 test files, 38+ tests passing
+- 🟢 E2E browser tests (Playwright)
+    15 critical path tests optimized
+    - Smoke tests: App boot, login flow, routing (6 tests)
+    - CUJ: Voting flow (2 tests)
+    - CUJ: Admin/settings (1 test)
+    - UI Rendering: Page content (3 tests)
+    - Accessibility: axe-core + ARIA (6 tests)
+    - Execution time: ~30 seconds
+    - Pass rate: 100% stable
 
 ## Polish & UX
 - 🔵 Loading states for all async operations

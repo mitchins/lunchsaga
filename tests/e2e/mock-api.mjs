@@ -272,6 +272,12 @@ async function handleRequest(req, res) {
         console.log(`[MOCK-API] GET /api/teams/${teamId}/members returned ${members.length} members`);
         return sendJSON(res, { members });
       }
+
+      if (parts.length === 5 && parts[4] === 'venues') {
+        // GET /api/teams/:teamId/venues
+        // Return empty list or dummy venues to prevent 404 errors
+        return sendJSON(res, { venues: [] });
+      }
     }
 
     // Catch-all for unimplemented endpoints
@@ -289,8 +295,8 @@ const PORT = 3757; // Same port as real API
 export function startMockAPI() {
   return new Promise((resolve) => {
     const server = http.createServer(handleRequest);
-    server.listen(PORT, () => {
-      console.log(`Mock API server listening on http://localhost:${PORT}`);
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`Mock API server listening on http://0.0.0.0:${PORT}`);
       resolve(server);
     });
   });
