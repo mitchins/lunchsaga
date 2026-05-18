@@ -47,17 +47,11 @@ This isn't HR bloat. It's the tiny version nobody built properly—simple recurr
 
 ## Tech Stack
 
-- React + TypeScript
-- Vite
-- Tailwind CSS
-- shadcn/ui components
-- Framer Motion for animations
-- Spark KV for persistence
+- **Frontend**: React + TypeScript, Vite, Tailwind CSS, shadcn/ui, Framer Motion
+- **Backend**: Python Cloudflare Worker ([Kinglet](https://github.com/mitchins/Kinglet) framework)
+- **Database**: Cloudflare D1 (SQLite)
+- **Auth**: Magic-link email + JWT
 
 ## Development
 
-This is a Spark template application. See the main Spark documentation for development workflows.
-
-📄 License For Spark Template Resources 
-
-The Spark Template files and resources from GitHub are licensed under the terms of the MIT license, Copyright GitHub, Inc.
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for setup, commands, and architecture details.
