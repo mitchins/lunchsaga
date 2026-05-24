@@ -29,6 +29,7 @@ npm run dev:fresh
 | `npm run db:rebuild` | Reseed test data via API |
 | `npm run db:migrate` | Run pending migrations |
 | `npm run db:reset` | Reset database |
+| `npm run dev:e2e` | Start dev servers with mock API for E2E tests |
 
 ## Testing
 
@@ -42,7 +43,7 @@ npm run test:e2e:ui    # Playwright with UI
 
 E2E tests use a mock API — run `npm run dev:e2e` instead of `npm run dev` when running Playwright tests locally.
 
-Unit test coverage thresholds (lines/functions/branches/statements): **80%**, applied only to files that have tests. Coverage reports land in `coverage/`.
+Unit test coverage thresholds (lines/functions/branches/statements): **80%**. Coverage is reported across all included source files (see `include`/`exclude` in `vite.config.ts`). Reports land in `coverage/`.
 
 ## Architecture
 

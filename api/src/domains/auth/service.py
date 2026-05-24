@@ -64,9 +64,10 @@ class AuthService:
         Generate and store magic link + OTP code.
         Sends email via SES in production or mock in development.
         """
-        # Check for dev OTP bypass
+        # Dev-only OTP bypass — disabled in production regardless of env vars
+        is_production = getattr(env, "ENVIRONMENT", "development") == "production"
         dev_otp = getattr(env, "DEV_OTP_CODE", None)
-        code = dev_otp if dev_otp else cls._generate_code()
+        code = dev_otp if (dev_otp and not is_production) else cls._generate_code()
 
         token = cls._generate_token()
         expires = datetime.now(timezone.utc) + timedelta(minutes=15)

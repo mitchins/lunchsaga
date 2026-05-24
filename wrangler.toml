@@ -24,6 +24,7 @@ database_id = "local"  # Replace with actual ID for production
 # enabled = true
 
 # Production environment overrides
+# DEV_OTP_CODE is intentionally absent — auth service also gates on ENVIRONMENT
 [env.production]
 vars = { ENVIRONMENT = "production" }
 
