@@ -1,31 +1,38 @@
-Thanks for helping make GitHub safe for everyone.
+# Security Policy
 
-# Security
+## Reporting a Vulnerability
 
-GitHub takes the security of our software products and services seriously, including all of the open source code repositories managed through our GitHub organizations, such as [GitHub](https://github.com/GitHub).
+If you discover a security vulnerability in this project, please report it privately by opening a [GitHub Security Advisory](https://github.com/mitchins/lunchsaga/security/advisories/new) rather than a public issue.
 
-Even though [open source repositories are outside of the scope of our bug bounty program](https://bounty.github.com/index.html#scope) and therefore not eligible for bounty rewards, we will ensure that your finding gets passed along to the appropriate maintainers for remediation. 
+Include as much detail as you can: steps to reproduce, impact, and any suggested fix. We aim to respond within 5 business days and will keep you updated on the fix timeline.
 
-## Reporting Security Issues
+## Safe Harbor
 
-If you believe you have found a security vulnerability in any GitHub-owned repository, please report it to us through coordinated disclosure.
+We support good-faith security research. If you:
 
-**Please do not report security vulnerabilities through public GitHub issues, discussions, or pull requests.**
+- Make a good-faith effort to avoid privacy violations, data destruction, and service disruption
+- Only interact with accounts you own or have explicit permission to test
+- Do not exploit a vulnerability beyond what is necessary to confirm its existence
+- Report findings promptly and privately
 
-Instead, please send an email to opensource-security[@]github.com.
+We will not pursue legal action against you. We ask that you give us reasonable time to address findings before any public disclosure.
 
-Please include as much of the information listed below as you can to help us better understand and resolve the issue:
+## Scope
 
-  * The type of issue (e.g., buffer overflow, SQL injection, or cross-site scripting)
-  * Full paths of source file(s) related to the manifestation of the issue
-  * The location of the affected source code (tag/branch/commit or direct URL)
-  * Any special configuration required to reproduce the issue
-  * Step-by-step instructions to reproduce the issue
-  * Proof-of-concept or exploit code (if possible)
-  * Impact of the issue, including how an attacker might exploit the issue
+### In Scope
 
-This information will help us triage your report more quickly.
+- Authentication and session handling (magic-link flow, JWT tokens)
+- API endpoints and authorization checks
+- Data exposure or privilege escalation between teams
 
-## Policy
+### Out of Scope
 
-See [GitHub's Safe Harbor Policy](https://docs.github.com/en/site-policy/security-policies/github-bug-bounty-program-legal-safe-harbor#1-safe-harbor-terms)
+- Denial of Service attacks
+- Social engineering or phishing
+- Physical security
+- Vulnerabilities in third-party dependencies (please report those upstream)
+- Rate limiting on unauthenticated public endpoints
+
+## Disclosure Policy
+
+We follow coordinated disclosure. After a fix ships, we aim to publicly acknowledge the vulnerability within 90 days of the original report. We appreciate patience while we address issues before public discussion.
