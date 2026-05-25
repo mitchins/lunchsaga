@@ -23,7 +23,7 @@
 - 🟢 Team switcher, dashboard
 - 🟢 Add / remove members
 - 🟢 Away toggle
-- 🔵 Leave team, edit team details (API done, no UI)
+- 🟡 Leave team, edit team details (API done, no UI)
 
 ## Rotation
 
@@ -48,7 +48,7 @@
 
 ## Gamification
 
-- 🔵 Achievement system (backend scaffolded, no UI)
+- 🟡 Achievement system (backend scaffolded, no UI)
 - 🔵 Post-lunch ratings
 
 ## Testing
