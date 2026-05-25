@@ -1,55 +1,53 @@
-# Development Guide
+# Development
 
 ## Prerequisites
 
 - Node.js 18+
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
-- [Cloudflare Wrangler](https://developers.cloudflare.com/workers/wrangler/)
+- Cloudflare [Wrangler](https://developers.cloudflare.com/workers/wrangler/)
 
-## Getting Started
+## Setup
 
 ```bash
 npm install
-npm run dev          # starts API (port 3757) + web (port 5173) together
+npm run dev        # starts API on :3757 and web on :5173
 ```
 
-To also seed fresh test data on startup:
+To start with a fresh database seeded with test data:
 
 ```bash
 npm run dev:fresh
 ```
 
-## Common Commands
+## Commands
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | Start API + web dev servers |
+| `npm run dev` | Start API + web |
 | `npm run dev:fresh` | Start + seed test data |
+| `npm run dev:e2e` | Start with mock API for Playwright tests |
 | `npm run kill` | Kill ports 5173 and 3757 |
-| `npm run db:rebuild` | Reseed test data via API |
+| `npm run db:rebuild` | Reseed via API |
 | `npm run db:migrate` | Run pending migrations |
-| `npm run db:reset` | Reset database |
-| `npm run dev:e2e` | Start dev servers with mock API for E2E tests |
+| `npm run db:reset` | Wipe and recreate tables |
 
-## Testing
+## Tests
 
 ```bash
-npm test               # unit tests (Vitest) with coverage
-npm run test:api       # Python API tests (pytest)
-npm run test:all       # both
-npm run test:e2e       # Playwright E2E tests (needs running dev server)
-npm run test:e2e:ui    # Playwright with UI
+npm test              # Vitest unit tests + coverage
+npm run test:api      # pytest (Python API)
+npm run test:all      # both
+npm run test:e2e      # Playwright (use dev:e2e server, not dev)
+npm run test:e2e:ui   # Playwright with UI runner
 ```
 
-E2E tests use a mock API — run `npm run dev:e2e` instead of `npm run dev` when running Playwright tests locally.
-
-Unit test coverage thresholds (lines/functions/branches/statements): **80%**. Coverage is reported across all included source files (see `include`/`exclude` in `vite.config.ts`). Reports land in `coverage/`.
+Coverage thresholds are 80% across all included source files. Reports go to `coverage/`. See `vite.config.ts` for include/exclude configuration.
 
 ## Architecture
 
-- **Frontend**: React + TypeScript + Vite, served from `src/`
-- **API**: Python Cloudflare Worker using [Kinglet](https://github.com/mitchins/Kinglet), served from `api/`
-- **Database**: Cloudflare D1 (SQLite) via Kinglet ORM
-- **Auth**: Magic-link email → OTP → JWT. Dev bypass: any email, code `000000`
+- **Frontend** — `src/`, React + TypeScript + Vite
+- **API** — `api/`, Python Cloudflare Worker using [Kinglet](https://github.com/mitchins/Kinglet)
+- **Database** — Cloudflare D1 (SQLite), accessed via Kinglet ORM
+- **Auth** — magic-link email → OTP → JWT. Dev shortcut: any email, code `000000`
 
-See `api/README.md` for backend structure and `tests/e2e/README.md` for E2E test details.
+See `api/README.md` for backend layout and `tests/e2e/README.md` for E2E details.
