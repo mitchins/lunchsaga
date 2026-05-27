@@ -48,6 +48,16 @@ describe('getNextOrganizer', () => {
     ];
     expect(getNextOrganizer(members)?.name).toBe('Alice');
   });
+
+  it('skips away members when selecting the next organizer', () => {
+    const members: TeamMember[] = [
+      { id: '1', name: 'Alice', points: 4, teamId: 't1', userId: 'u1', totalWins: 0, reputationScore: 0, avatar: '', isAway: false },
+      { id: '2', name: 'Bob', points: 1, teamId: 't1', userId: 'u2', totalWins: 0, reputationScore: 0, avatar: '', isAway: true },
+      { id: '3', name: 'Charlie', points: 6, teamId: 't1', userId: 'u3', totalWins: 0, reputationScore: 0, avatar: '', isAway: false }
+    ];
+
+    expect(getNextOrganizer(members)?.name).toBe('Alice');
+  });
 });
 
 describe('calculateReputationScore', () => {

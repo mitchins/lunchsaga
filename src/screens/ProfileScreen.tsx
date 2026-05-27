@@ -12,17 +12,17 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { getAchievementTitle } from '@/lib/helpers'
 import { Separator } from '@/components/ui/separator'
-import { PencilSimple, Check, X, AirplaneTilt } from '@phosphor-icons/react'
+import { AirplaneTiltIcon, CheckIcon, PencilSimpleIcon, XIcon } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 interface ProfileScreenProps {
-  member: TeamMember
-  badges: BadgeType[]
-  userBadges: UserBadge[]
-  isOwnProfile?: boolean
-  onBack: () => void
-  onUpdateName?: (name: string) => Promise<void>
-  onToggleAway?: (isAway: boolean) => Promise<void>
+  readonly member: TeamMember
+  readonly badges: BadgeType[]
+  readonly userBadges: UserBadge[]
+  readonly isOwnProfile?: boolean
+  readonly onBack: () => void
+  readonly onUpdateName?: (name: string) => Promise<void>
+  readonly onToggleAway?: (isAway: boolean) => Promise<void>
 }
 
 export function ProfileScreen({ 
@@ -122,16 +122,18 @@ export function ProfileScreen({
                         variant="ghost" 
                         onClick={handleSaveName}
                         disabled={isSaving}
+                        aria-label="Save name"
                       >
-                        <Check size={20} className="text-green-600" />
+                        <CheckIcon size={20} className="text-green-600" />
                       </Button>
                       <Button 
                         size="icon" 
                         variant="ghost" 
                         onClick={handleCancelEdit}
                         disabled={isSaving}
+                        aria-label="Cancel editing"
                       >
-                        <X size={20} className="text-red-600" />
+                        <XIcon size={20} className="text-red-600" />
                       </Button>
                     </div>
                   ) : (
@@ -139,7 +141,7 @@ export function ProfileScreen({
                       <h2 className="text-3xl font-semibold">{member.name}</h2>
                       {member.isAway && (
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded-md text-sm text-muted-foreground">
-                          <AirplaneTilt size={14} />
+                          <AirplaneTiltIcon size={14} />
                           Away
                         </span>
                       )}
@@ -149,8 +151,9 @@ export function ProfileScreen({
                           variant="ghost" 
                           onClick={() => setIsEditing(true)}
                           className="ml-1"
+                          aria-label="Edit name"
                         >
-                          <PencilSimple size={18} />
+                          <PencilSimpleIcon size={18} />
                         </Button>
                       )}
                     </>
