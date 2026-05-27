@@ -11,24 +11,24 @@ import { MemberCard } from '@/components/MemberCard'
 import { AddMemberDialog } from '@/components/AddMemberDialog'
 import { Leaderboard } from '@/components/Leaderboard'
 import { EmptyState } from '@/components/EmptyState'
-import { Users, MapPin, Clock, UserCircle } from '@phosphor-icons/react'
+import { ClockIcon, MapPinIcon, UserCircleIcon, UsersIcon } from '@phosphor-icons/react'
 
 interface TeamDashboardScreenProps {
-  team: Team
-  teams: Team[]
-  members: TeamMember[]
-  currentUserMemberId?: string
-  nextOrganizer: TeamMember | null
-  isHolidayMode: boolean
-  onBack: () => void
-  onTeamSwitch: (teamId: string) => void
-  onAddMember: (name: string) => void
-  onRemoveMember: (id: string) => void
-  onToggleHoliday: (checked: boolean) => void
-  onToggleMemberAway: (memberId: string, isAway: boolean) => void
-  onNavigateToVote: () => void
-  onNavigateToHistory: () => void
-  onNavigateToProfile?: (memberId: string) => void
+  readonly team: Team
+  readonly teams: Team[]
+  readonly members: TeamMember[]
+  readonly currentUserMemberId?: string
+  readonly nextOrganizer: TeamMember | null
+  readonly isHolidayMode: boolean
+  readonly onBack: () => void
+  readonly onTeamSwitch: (teamId: string) => void
+  readonly onAddMember: (name: string) => void
+  readonly onRemoveMember: (id: string) => void
+  readonly onToggleHoliday: (checked: boolean) => void
+  readonly onToggleMemberAway: (memberId: string, isAway: boolean) => void
+  readonly onNavigateToVote: () => void
+  readonly onNavigateToHistory: () => void
+  readonly onNavigateToProfile?: (memberId: string) => void
 }
 
 export function TeamDashboardScreen({
@@ -51,6 +51,12 @@ export function TeamDashboardScreen({
   const [activeTab, setActiveTab] = useState<'roster' | 'vote' | 'history'>('roster')
   const averagePoints =
     members.length > 0 ? Math.round(members.reduce((sum, m) => sum + m.points, 0) / members.length) : 0
+  const sortedMembers = [...members].sort((a, b) => a.points - b.points)
+  const handleTabChange = (value: string) => {
+    if (value === 'roster' || value === 'vote' || value === 'history') {
+      setActiveTab(value)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,7 +74,7 @@ export function TeamDashboardScreen({
                   className="gap-2"
                   onClick={() => onNavigateToProfile(currentUserMemberId)}
                 >
-                  <UserCircle size={16} />
+                  <UserCircleIcon size={16} />
                   My Profile
                 </Button>
               )}
@@ -98,18 +104,18 @@ export function TeamDashboardScreen({
           )}
         </div>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 max-w-md">
             <TabsTrigger value="roster" className="gap-2">
-              <Users size={16} />
+              <UsersIcon size={16} />
               Roster
             </TabsTrigger>
             <TabsTrigger value="vote" className="gap-2">
-              <MapPin size={16} />
+              <MapPinIcon size={16} />
               Vote
             </TabsTrigger>
             <TabsTrigger value="history" className="gap-2">
-              <Clock size={16} />
+              <ClockIcon size={16} />
               History
             </TabsTrigger>
           </TabsList>
@@ -129,16 +135,14 @@ export function TeamDashboardScreen({
 
             {members.length === 0 ? (
               <EmptyState
-                icon={<Users size={48} />}
+                icon={<UsersIcon size={48} />}
                 title="Your Fellowship Awaits"
                 description="Assemble your team to begin the saga of legendary lunch adventures"
               />
             ) : (
               <>
                 <div className="grid gap-3">
-                  {members
-                    .sort((a, b) => a.points - b.points)
-                    .map((member) => (
+                  {sortedMembers.map((member) => (
                       <MemberCard
                         key={member.id}
                         member={member}

@@ -1,28 +1,21 @@
-import { useState } from 'react'
-import { LunchPeriod, TeamMember, VenueOption } from '@/lib/types'
+import { LunchPeriod, TeamMember } from '@/lib/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { VoteButtons } from '@/components/VoteButtons'
 import { EmptyState } from '@/components/EmptyState'
-import { CalendarBlank, Plus, MapPin, Check } from '@phosphor-icons/react'
+import { CalendarBlankIcon } from '@phosphor-icons/react'
 import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge'
 
 interface VotingScreenProps {
-  period: LunchPeriod | null
-  members: TeamMember[]
-  currentMemberId: string | null
-  isHolidayMode: boolean
-  onBack: () => void
-  onVote: (venueId: string) => void
-  onComplete: () => void
-  onStartWeek: () => void
-  onProposeVenue?: (name: string, description: string) => Promise<void>
-  onStartVoting?: () => Promise<void>
+  readonly period: LunchPeriod | null
+  readonly members: TeamMember[]
+  readonly currentMemberId: string | null
+  readonly isHolidayMode: boolean
+  readonly onBack: () => void
+  readonly onVote: (venueId: string) => void
+  readonly onComplete: () => void
+  readonly onStartWeek: () => void
 }
 
 export function VotingScreen({
@@ -34,19 +27,14 @@ export function VotingScreen({
   onVote,
   onComplete,
   onStartWeek,
-  onProposeVenue,
-  onStartVoting,
 }: VotingScreenProps) {
-  const [venueName, setVenueName] = useState('')
-  const [venueDescription, setVenueDescription] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
   if (!period) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <ScreenHeader title="Voting" subtitle="Cast your vote for this week's lunch" onBack={onBack} />
           <EmptyState
-            icon={<CalendarBlank size={48} />}
+            icon={<CalendarBlankIcon size={48} />}
             title="The Chapter Awaits"
             description={
               isHolidayMode
@@ -54,12 +42,12 @@ export function VotingScreen({
                 : "A new chapter begins when you start this week's quest."
             }
             action={
-              !isHolidayMode
-                ? {
+              isHolidayMode
+                ? undefined
+                : {
                     label: 'Begin This Chapter',
                     onClick: onStartWeek,
                   }
-                : undefined
             }
           />
         </div>
@@ -73,7 +61,7 @@ export function VotingScreen({
     ? period.venueOptions.some((v) => v.votes.includes(currentMember.id))
     : false
   const totalVotes = period.venueOptions.reduce((sum, v) => sum + v.votes.length, 0)
-  const activeMembers = members.length
+  const activeMembers = members.filter((member) => !member.isAway).length
 
   return (
     <div className="min-h-screen bg-background">

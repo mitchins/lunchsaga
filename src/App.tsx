@@ -66,6 +66,50 @@ function transformPeriod(p: APILunchPeriod): LunchPeriod {
   }
 }
 
+interface ProfileRouteProps {
+  readonly teamMembers: TeamMember[]
+  readonly teamDataReady: boolean
+  readonly user: User
+  readonly onBack: () => void
+  readonly onUpdateName: (memberId: string, name: string) => Promise<void>
+  readonly onToggleAway: (memberId: string, isAway: boolean) => Promise<void>
+}
+
+function ProfileRoute({
+  teamMembers,
+  teamDataReady,
+  user,
+  onBack,
+  onUpdateName,
+  onToggleAway,
+}: ProfileRouteProps) {
+  const { teamId, memberId } = useParams<{ teamId: string; memberId: string }>()
+
+  if (!teamDataReady) {
+    return <LoadingScreen />
+  }
+
+  const member = teamMembers.find((candidate) => candidate.id === memberId)
+
+  if (!member) {
+    return <Navigate to={teamId ? `/dashboard/${teamId}` : '/teams'} replace />
+  }
+
+  const isOwnProfile = member.userId === user.id
+
+  return (
+    <ProfileScreen
+      member={member}
+      badges={mockBadges}
+      userBadges={mockUserBadges}
+      isOwnProfile={isOwnProfile}
+      onBack={onBack}
+      onUpdateName={isOwnProfile ? (name) => onUpdateName(member.id, name) : undefined}
+      onToggleAway={isOwnProfile ? (isAway) => onToggleAway(member.id, isAway) : undefined}
+    />
+  )
+}
+
 function AppRouter() {
   const navigate = useNavigate()
   const { teamId: urlTeamId } = useParams<{ teamId: string }>()
@@ -78,6 +122,8 @@ function AppRouter() {
   // Team state
   const [teams, setTeams] = useState<Team[]>([])
   const [members, setMembers] = useState<TeamMember[]>([])
+  const [isTeamDataLoading, setIsTeamDataLoading] = useState(false)
+  const [loadedTeamDataId, setLoadedTeamDataId] = useState<string | null>(null)
   
   // Voting state
   const [currentPeriod, setCurrentPeriod] = useState<LunchPeriod | null>(null)
@@ -91,6 +137,7 @@ function AppRouter() {
   const selectedTeam = selectedTeamId ? teams.find((t) => t.id === selectedTeamId) : null
   const teamMembers = selectedTeamId ? members.filter((m) => m.teamId === selectedTeamId) : []
   const nextOrganizer = getNextOrganizer(teamMembers)
+  const isSelectedTeamDataReady = selectedTeamId !== null && loadedTeamDataId === selectedTeamId && !isTeamDataLoading
   const currentWeek = Math.ceil((Date.now() - (selectedTeam?.createdAt || Date.now())) / (7 * 24 * 60 * 60 * 1000))
 
   // Check authentication on mount
@@ -149,6 +196,8 @@ function AppRouter() {
 
   // Load team members when team is selected
   const loadTeamData = useCallback(async (teamId: string) => {
+    setIsTeamDataLoading(true)
+
     try {
       const [membersRes, periodRes] = await Promise.all([
         teamsAPI.getTeamMembers(teamId),
@@ -168,12 +217,18 @@ function AppRouter() {
     } catch (error) {
       console.error('Failed to load team data:', error)
       toast.error('Failed to load team data')
+    } finally {
+      setLoadedTeamDataId(teamId)
+      setIsTeamDataLoading(false)
     }
   }, [])
 
   useEffect(() => {
     if (selectedTeamId) {
+      setLoadedTeamDataId(null)
       loadTeamData(selectedTeamId)
+    } else {
+      setLoadedTeamDataId(null)
     }
   }, [selectedTeamId, loadTeamData])
 
@@ -298,7 +353,7 @@ function AppRouter() {
     try {
       await teamsAPI.updateMember(selectedTeamId, memberId, { isAway })
       setMembers((prev) =>
-        prev.map((m) => (m.id === memberId ? { ...m, isAway } as TeamMember : m))
+        prev.map((m) => (m.id === memberId ? { ...m, isAway } : m))
       )
       const member = members.find((m) => m.id === memberId)
       if (member) {
@@ -352,40 +407,6 @@ function AppRouter() {
     }
   }
 
-  const handleProposeVenue = async (name: string, description: string) => {
-    if (!currentPeriod) return
-    
-    try {
-      await votingAPI.proposeVenue(currentPeriod.id, { name, description })
-      // Reload the period to get updated venue list
-      const { period } = await votingAPI.getCurrentPeriod(selectedTeamId!)
-      if (period) {
-        setCurrentPeriod(transformPeriod(period))
-      }
-      toast.success('Venue proposed! 🍽️')
-    } catch (error) {
-      console.error('Failed to propose venue:', error)
-      toast.error('Failed to propose venue')
-    }
-  }
-
-  const handleStartVoting = async () => {
-    if (!currentPeriod) return
-    
-    try {
-      await votingAPI.startVoting(currentPeriod.id)
-      // Reload the period to get updated status
-      const { period } = await votingAPI.getCurrentPeriod(selectedTeamId!)
-      if (period) {
-        setCurrentPeriod(transformPeriod(period))
-      }
-      toast.success('Voting has begun! 🗳️')
-    } catch (error) {
-      console.error('Failed to start voting:', error)
-      toast.error('Failed to start voting')
-    }
-  }
-
   // Show loading while checking auth
   if (isLoading || !authChecked) {
     return <LoadingScreen />
@@ -397,29 +418,6 @@ function AppRouter() {
 
   // Find the current user's member record in the selected team
   const currentUserMember = teamMembers.find((m) => m.userId === user.id)
-
-  const ProfileRoute = () => {
-    const { teamId: profileTeamId, memberId } = useParams<{ teamId: string; memberId: string }>()
-    const member = teamMembers.find((m) => m.id === memberId)
-    
-    if (!member) {
-      return <Navigate to={`/dashboard/${profileTeamId}`} replace />
-    }
-
-    const isOwnProfile = member.userId === user?.id
-
-    return (
-      <ProfileScreen
-        member={member}
-        badges={mockBadges}
-        userBadges={mockUserBadges}
-        isOwnProfile={isOwnProfile}
-        onBack={handleBack}
-        onUpdateName={isOwnProfile ? (name) => handleUpdateMemberName(member.id, name) : undefined}
-        onToggleAway={isOwnProfile && selectedTeamId ? (isAway) => handleToggleMemberAway(member.id, isAway).then(() => {}) : undefined}
-      />
-    )
-  }
 
   return (
     <Routes>
@@ -474,8 +472,6 @@ function AppRouter() {
             onVote={handleVote}
             onComplete={handleCompletePeriod}
             onStartWeek={handleStartWeek}
-            onProposeVenue={handleProposeVenue}
-            onStartVoting={handleStartVoting}
           />
         }
       />
@@ -489,7 +485,19 @@ function AppRouter() {
           />
         }
       />
-      <Route path="/profile/:teamId/:memberId" element={<ProfileRoute />} />
+      <Route
+        path="/profile/:teamId/:memberId"
+        element={
+          <ProfileRoute
+            teamMembers={teamMembers}
+            teamDataReady={isSelectedTeamDataReady}
+            user={user}
+            onBack={handleBack}
+            onUpdateName={handleUpdateMemberName}
+            onToggleAway={handleToggleMemberAway}
+          />
+        }
+      />
       <Route
         path="/settings/:teamId"
         element={

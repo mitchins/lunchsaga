@@ -1,14 +1,16 @@
 import { TeamMember } from './types'
 
 export function getNextOrganizer(members: TeamMember[]): TeamMember | null {
-  if (members.length === 0) return null
+  const eligibleMembers = members.filter((member) => !member.isAway)
+
+  if (eligibleMembers.length === 0) return null
   
-  const minPoints = Math.min(...members.map(m => m.points))
-  const candidates = members.filter(m => m.points === minPoints)
+  const minPoints = Math.min(...eligibleMembers.map((member) => member.points))
+  const candidates = eligibleMembers.filter((member) => member.points === minPoints)
   
   if (candidates.length === 1) return candidates[0]
   
-  return candidates.sort((a, b) => a.name.localeCompare(b.name))[0]
+  return [...candidates].sort((a, b) => a.name.localeCompare(b.name))[0]
 }
 
 export function calculateReputationScore(
