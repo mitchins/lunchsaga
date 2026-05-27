@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, Navigate, useParams } from 'react-router-dom'
 import { User, Team, TeamMember, LunchPeriod } from '@/lib/types'
 import { getNextOrganizer } from '@/lib/helpers'
@@ -124,6 +124,7 @@ function AppRouter() {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [isTeamDataLoading, setIsTeamDataLoading] = useState(false)
   const [loadedTeamDataId, setLoadedTeamDataId] = useState<string | null>(null)
+  const latestTeamDataRequestRef = useRef(0)
   
   // Voting state
   const [currentPeriod, setCurrentPeriod] = useState<LunchPeriod | null>(null)
@@ -196,13 +197,19 @@ function AppRouter() {
 
   // Load team members when team is selected
   const loadTeamData = useCallback(async (teamId: string) => {
+    const requestId = ++latestTeamDataRequestRef.current
     setIsTeamDataLoading(true)
+    let didSucceed = false
 
     try {
       const [membersRes, periodRes] = await Promise.all([
         teamsAPI.getTeamMembers(teamId),
         votingAPI.getCurrentPeriod(teamId).catch(() => ({ period: null })),
       ])
+
+      if (requestId !== latestTeamDataRequestRef.current) {
+        return
+      }
       
       setMembers(membersRes.members.map(transformMember))
       setCurrentPeriod(periodRes.period ? transformPeriod(periodRes.period) : null)
@@ -210,16 +217,29 @@ function AppRouter() {
       // Also load history
       try {
         const historyRes = await votingAPI.getPeriodHistory(teamId)
+
+        if (requestId !== latestTeamDataRequestRef.current) {
+          return
+        }
+
         setHistory(historyRes.periods.map(transformPeriod))
       } catch {
+        if (requestId !== latestTeamDataRequestRef.current) {
+          return
+        }
+
         setHistory([])
       }
+
+      didSucceed = true
     } catch (error) {
       console.error('Failed to load team data:', error)
       toast.error('Failed to load team data')
     } finally {
-      setLoadedTeamDataId(teamId)
-      setIsTeamDataLoading(false)
+      if (requestId === latestTeamDataRequestRef.current) {
+        setLoadedTeamDataId(didSucceed ? teamId : null)
+        setIsTeamDataLoading(false)
+      }
     }
   }, [])
 

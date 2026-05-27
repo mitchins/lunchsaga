@@ -322,4 +322,47 @@ describe('screen flows', () => {
 
     expect(onComplete).toHaveBeenCalledTimes(1)
   })
+
+  it('ignores away-member votes when determining completion', async () => {
+    const user = userEvent.setup()
+    const onComplete = vi.fn()
+    const organizer = { ...baseMember, id: 'member-1', userId: 'user-1', name: 'Organizer' }
+    const voter = { ...baseMember, id: 'member-2', userId: 'user-2', name: 'Voter' }
+    const awayMember = { ...baseMember, id: 'member-3', userId: 'user-3', name: 'Away Member', isAway: true }
+
+    render(
+      <VotingScreen
+        period={createPeriod({
+          organizerId: organizer.id,
+          venueOptions: [
+            {
+              id: 'venue-1',
+              name: 'Sushi Place',
+              description: 'Fresh rolls',
+              votes: [voter.id, awayMember.id],
+              proposedBy: organizer.id,
+            },
+            {
+              id: 'venue-2',
+              name: 'Burger Town',
+              description: 'Big burgers',
+              votes: [organizer.id],
+              proposedBy: voter.id,
+            },
+          ],
+        })}
+        members={[organizer, voter, awayMember]}
+        currentMemberId={voter.userId}
+        isHolidayMode={false}
+        onBack={vi.fn()}
+        onVote={vi.fn()}
+        onComplete={onComplete}
+        onStartWeek={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Complete Voting' }))
+
+    expect(onComplete).toHaveBeenCalledTimes(1)
+  })
 })

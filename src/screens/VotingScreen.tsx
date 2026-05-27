@@ -57,11 +57,18 @@ export function VotingScreen({
 
   const organizer = members.find((m) => m.id === period.organizerId)
   const currentMember = members.find((m) => m.userId === currentMemberId)
+  const activeMemberIds = new Set(
+    members.filter((member) => !member.isAway).map((member) => member.id),
+  )
+  const activeMembers = activeMemberIds.size
   const userHasVoted = currentMember
     ? period.venueOptions.some((v) => v.votes.includes(currentMember.id))
     : false
-  const totalVotes = period.venueOptions.reduce((sum, v) => sum + v.votes.length, 0)
-  const activeMembers = members.filter((member) => !member.isAway).length
+  const totalVotes = period.venueOptions.reduce(
+    (sum, venue) => sum + venue.votes.filter((memberId) => activeMemberIds.has(memberId)).length,
+    0,
+  )
+  const progressValue = activeMembers > 0 ? (totalVotes / activeMembers) * 100 : 0
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,7 +90,7 @@ export function VotingScreen({
                   {totalVotes === activeMembers && ' - All votes in! ✨'}
                 </span>
               </div>
-              <Progress value={(totalVotes / activeMembers) * 100} />
+              <Progress value={progressValue} />
             </div>
           </Card>
         )}
@@ -99,8 +106,9 @@ export function VotingScreen({
         <div className="grid gap-4 md:grid-cols-2">
           {period.venueOptions.map((venue) => {
             const userVotedForThis = currentMember ? venue.votes.includes(currentMember.id) : false
+            const activeVotesForVenue = venue.votes.filter((memberId) => activeMemberIds.has(memberId)).length
             const votePercentage =
-              activeMembers > 0 ? Math.round((venue.votes.length / activeMembers) * 100) : 0
+              activeMembers > 0 ? Math.round((activeVotesForVenue / activeMembers) * 100) : 0
 
             return (
               <Card key={venue.id}>
@@ -116,7 +124,7 @@ export function VotingScreen({
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Votes</span>
                         <span className="font-medium">
-                          {venue.votes.length} ({votePercentage}%)
+                          {activeVotesForVenue} ({votePercentage}%)
                         </span>
                       </div>
                       <Progress value={votePercentage} />
