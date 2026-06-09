@@ -3,7 +3,63 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      # Interdependent packages that must move together to avoid peer-dep
+      # mismatches and half-upgraded states across separate PRs.
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "react-router*"
+          - "@types/react"
+          - "@types/react-dom"
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+      testing:
+        patterns:
+          - "@playwright/*"
+          - "playwright"
+          - "@axe-core/*"
+          - "vitest"
+          - "@vitest/*"
+          - "@testing-library/*"
+          - "happy-dom"
+          - "jsdom"
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "tw-animate-css"
+      lint:
+        patterns:
+          - "eslint"
+          - "@eslint/*"
+          - "eslint-plugin-*"
+          - "typescript-eslint"
+          - "globals"
+      # Everything else: batch low-risk minor/patch bumps into a single PR.
+      # Majors fall through to their own individual PRs on purpose — they may
+      # carry breaking changes and deserve isolated review.
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Keep the SHA-pinned actions in the workflows current. Without this they
+  # silently rot at whatever commit they were first pinned to.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   - package-ecosystem: "devcontainers"
     directory: "/"
