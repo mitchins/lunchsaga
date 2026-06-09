@@ -28,20 +28,19 @@ test.describe('CUJ: Admin', () => {
     await expect(holidayToggle).toHaveAttribute('aria-checked');
     expect(initialState === 'true' || initialState === 'false').toBeTruthy();
 
-    // Click it
-    const toggleRequest = page.waitForResponse((response) =>
-      response.request().method() === 'PUT' &&
-      response.url().endsWith('/api/teams/test-team-001')
-    );
-    await holidayToggle.click();
-    const response = await toggleRequest;
-    expect(response.ok()).toBeTruthy();
+    const toggleAndVerify = async (targetState: string) => {
+      const request = page.waitForResponse((response) =>
+        response.request().method() === 'PUT' &&
+        response.url().endsWith('/api/teams/test-team-001')
+      );
+      await holidayToggle.click();
+      const response = await request;
+      expect(response.ok()).toBeTruthy();
+      await expect(holidayToggle).toHaveAttribute('aria-checked', targetState);
+    }
 
-    // Verify UI state changed (optimistic update)
-    // Verify persisted state in the rendered UI after the backend update completes.
-    await expect(holidayToggle).toHaveAttribute(
-      'aria-checked',
-      initialState === 'true' ? 'false' : 'true'
-    );
+    const newState = initialState === 'true' ? 'false' : 'true';
+    await toggleAndVerify(newState);
+    await toggleAndVerify(initialState ?? 'false');
   });
 });
