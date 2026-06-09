@@ -13,7 +13,7 @@ class TestAuthValidators:
             (["user@example.com"], "Email must be a string"),
             ("valid@example.com", None),
             ("VALID@Example.Com", None),
-            ("a" * 250 + "@x.com", None),
+            ("a" * 249 + "@x.com", None),
             ("a" * 256 + "@x.com", "Email must be less than 255 characters"),
             ("notanemail", "Invalid email format"),
         ],

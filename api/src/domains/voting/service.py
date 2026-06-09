@@ -204,42 +204,40 @@ class VotingService:
         if not venue:
             return {"error": "Venue not found"}
 
-        await db.prepare("BEGIN IMMEDIATE").run()
-        try:
-            # Check for existing vote
-            existing = await Vote.objects.filter(
-                db, period_id=period_id, member_id=member_id
-            ).first()
+        # Check for existing vote
+        existing = await Vote.objects.filter(
+            db, period_id=period_id, member_id=member_id
+        ).first()
 
-            if existing:
-                if existing.venue_id == venue_id:
-                    # Already voted for this venue - remove vote (toggle)
-                    await Vote.objects.filter(db, id=existing.id).delete()
-                    await cls._increment_venue_vote_count(db, venue_id, -1)
-                    result = {"voted": False, "action": "removed"}
-                else:
-                    # Change vote - decrement old, increment new
-                    await cls._increment_venue_vote_count(db, existing.venue_id, -1)
-
+        if existing:
+            if existing.venue_id == venue_id:
+                # Already voted for this venue - remove vote (toggle)
+                await Vote.objects.filter(db, id=existing.id).delete()
+                await cls._increment_venue_vote_count(db, venue_id, -1)
+                result = {"voted": False, "action": "removed"}
+            else:
+                # Change vote - decrement old, increment new
+                await cls._increment_venue_vote_count(db, existing.venue_id, -1)
+                try:
                     await Vote.objects.filter(db, id=existing.id).update(venue_id=venue_id)
                     await cls._increment_venue_vote_count(db, venue_id, 1)
                     result = {"voted": True, "action": "changed"}
-            else:
-                # New vote
-                await Vote.objects.create(
-                    db,
-                    period_id=period_id,
-                    venue_id=venue_id,
-                    member_id=member_id,
-                )
-                await cls._increment_venue_vote_count(db, venue_id, 1)
-                result = {"voted": True, "action": "added"}
+                except Exception:
+                    # Roll back vote count change on venue switch if row update fails.
+                    await cls._increment_venue_vote_count(db, existing.venue_id, 1)
+                    raise
+        else:
+            # New vote
+            await Vote.objects.create(
+                db,
+                period_id=period_id,
+                venue_id=venue_id,
+                member_id=member_id,
+            )
+            await cls._increment_venue_vote_count(db, venue_id, 1)
+            result = {"voted": True, "action": "added"}
 
-            await db.prepare("COMMIT").run()
-            return result
-        except Exception:
-            await db.prepare("ROLLBACK").run()
-            raise
+        return result
 
     @classmethod
     async def complete_period(cls, db, period_id: str, organizer_id: str) -> dict | None:
@@ -272,7 +270,7 @@ class VotingService:
                 str(candidate.id),
             ),
         )[0]
-        now = datetime.now(timezone.utc)
+        now = int(datetime.now(timezone.utc).timestamp() * 1000)
         await db.prepare(
             """
             UPDATE lunch_periods

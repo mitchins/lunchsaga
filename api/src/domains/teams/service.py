@@ -50,7 +50,6 @@ class TeamService:
         team = None
 
         for _ in range(10):
-            await db.prepare("BEGIN IMMEDIATE").run()
             try:
                 # Create team with retry-safe invite code handling.
                 invite_code = cls._generate_invite_code()
@@ -70,15 +69,15 @@ class TeamService:
                     user_id=owner_id,
                     name=owner_name,
                 )
-
-                await db.prepare("COMMIT").run()
-                break
             except Exception as exc:
-                await db.prepare("ROLLBACK").run()
-                team = None
+                if team is not None:
+                    await Team.objects.filter(db, id=str(team.id)).delete()
+                    team = None
 
                 if not cls._is_invite_code_unique_error(exc):
                     raise
+
+                continue
 
         if not team:
             raise RuntimeError("Unable to generate a unique invite code")

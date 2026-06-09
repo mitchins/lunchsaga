@@ -115,7 +115,6 @@ class AuthService:
         now = datetime.now(timezone.utc)
         link = None
 
-        await db.prepare("BEGIN IMMEDIATE").run()
         try:
             # Try to find and claim by token first
             link = await MagicLink.objects.filter(
@@ -142,7 +141,6 @@ class AuthService:
 
                 if expires_at < now:
                     link = None
-                    await db.prepare("ROLLBACK").run()
 
                 if not link:
                     return None
@@ -167,7 +165,6 @@ class AuthService:
                 await MagicLink.objects.filter(db, id=str(link.id), used=False).update(
                     used=True
                 )
-                await db.prepare("COMMIT").run()
                 return {
                     "token": token,
                     "user": {
@@ -177,9 +174,7 @@ class AuthService:
                         "avatar": user.avatar,
                     },
                 }
-            await db.prepare("ROLLBACK").run()
         except Exception:
-            await db.prepare("ROLLBACK").run()
             raise
 
         return None

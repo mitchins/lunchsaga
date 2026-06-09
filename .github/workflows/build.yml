@@ -32,6 +32,20 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install backend dependencies
+        run: ~/.cargo/bin/uv sync --group dev
+
+      - name: Run backend tests
+        run: ~/.cargo/bin/uv run pytest api/tests/ -v
       
       - name: Run tests with coverage
         run: npm run test -- --run
