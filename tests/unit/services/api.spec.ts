@@ -2,6 +2,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { APIError, authAPI, clearToken, getToken, membersAPI, setToken, teamsAPI, votingAPI, healthAPI } from '@/services/api'
 
+const createLocalStorageMock = () => {
+  const store = new Map<string, string>()
+
+  return {
+    clear: () => store.clear(),
+    getItem: (key: string) => {
+      const value = store.get(key)
+      return value === undefined ? null : value
+    },
+    setItem: (key: string, value: string) => {
+      store.set(key, String(value))
+    },
+    removeItem: (key: string) => {
+      store.delete(key)
+    },
+  } as Storage
+}
+
 type FetchMockResponse = {
   ok: boolean
   status: number
@@ -16,16 +34,19 @@ const mockResponse = (body: unknown, opts: { ok?: boolean; status?: number } = {
 
 describe('services/api', () => {
   let fetchMock: ReturnType<typeof vi.fn>
+  let localStorageMock: Storage
 
   beforeEach(() => {
-    localStorage.clear()
+    localStorageMock = createLocalStorageMock()
+    vi.stubGlobal('localStorage', localStorageMock)
+    localStorageMock.clear()
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
   })
 
   afterEach(() => {
-    vi.unstubAllGlobals()
     clearToken()
+    vi.unstubAllGlobals()
   })
 
   it('uses bearer token when present for token-authenticated requests', async () => {
