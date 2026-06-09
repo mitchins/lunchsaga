@@ -4,6 +4,7 @@ Voting Service
 Business logic for lunch period management and voting.
 """
 
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 from domains.teams.rotation import RotationService
@@ -12,6 +13,20 @@ from models import LunchPeriod, TeamMember, VenueOption, Vote
 
 class VotingService:
     """Service for voting operations"""
+
+    @classmethod
+    async def _increment_venue_vote_count(cls, db, venue_id: str, delta: int) -> None:
+        """Adjust vote count with a single atomic SQL statement."""
+        await db.prepare(
+            """
+            UPDATE venue_options
+            SET vote_count = CASE
+                WHEN vote_count + ? < 0 THEN 0
+                ELSE vote_count + ?
+            END
+            WHERE id = ?
+            """
+        ).bind(delta, delta, str(venue_id)).run()
 
     @classmethod
     async def get_current_period(cls, db, team_id: str) -> dict | None:
@@ -29,15 +44,27 @@ class VotingService:
         return await cls._format_period(db, period)
 
     @classmethod
-    async def _format_period(cls, db, period) -> dict:
+    async def _format_period(
+        cls,
+        db,
+        period,
+        venues: list | None = None,
+        votes: list | None = None,
+    ) -> dict:
         """Format a period with its venue options"""
-        venues = await VenueOption.objects.filter(db, period_id=str(period.id)).all()
+        venue_options_raw = venues if venues is not None else await VenueOption.objects.filter(
+            db, period_id=str(period.id)
+        ).all()
+        votes_raw = votes if votes is not None else await Vote.objects.filter(
+            db, period_id=str(period.id)
+        ).all()
+        votes_by_venue: dict[str, list[str]] = defaultdict(list)
+        for vote in votes_raw:
+            votes_by_venue[str(vote.venue_id)].append(str(vote.member_id))
 
         venue_options = []
-        for v in venues:
-            # Get votes for this venue
-            votes = await Vote.objects.filter(db, venue_id=str(v.id)).all()
-            voter_ids = [vote.member_id for vote in votes]
+        for v in venue_options_raw:
+            voter_ids = votes_by_venue.get(str(v.id), [])
 
             venue_options.append(
                 {
@@ -177,45 +204,42 @@ class VotingService:
         if not venue:
             return {"error": "Venue not found"}
 
-        # Check for existing vote
-        existing = await Vote.objects.filter(
-            db, period_id=period_id, member_id=member_id
-        ).first()
+        await db.prepare("BEGIN IMMEDIATE").run()
+        try:
+            # Check for existing vote
+            existing = await Vote.objects.filter(
+                db, period_id=period_id, member_id=member_id
+            ).first()
 
-        if existing:
-            if existing.venue_id == venue_id:
-                # Already voted for this venue - remove vote (toggle)
-                await Vote.objects.filter(db, id=existing.id).delete()
-                await VenueOption.objects.filter(db, id=venue_id).update(
-                    vote_count=venue.vote_count - 1
+            if existing:
+                if existing.venue_id == venue_id:
+                    # Already voted for this venue - remove vote (toggle)
+                    await Vote.objects.filter(db, id=existing.id).delete()
+                    await cls._increment_venue_vote_count(db, venue_id, -1)
+                    result = {"voted": False, "action": "removed"}
+                else:
+                    # Change vote - decrement old, increment new
+                    await cls._increment_venue_vote_count(db, existing.venue_id, -1)
+
+                    await Vote.objects.filter(db, id=existing.id).update(venue_id=venue_id)
+                    await cls._increment_venue_vote_count(db, venue_id, 1)
+                    result = {"voted": True, "action": "changed"}
+            else:
+                # New vote
+                await Vote.objects.create(
+                    db,
+                    period_id=period_id,
+                    venue_id=venue_id,
+                    member_id=member_id,
                 )
-                return {"voted": False, "action": "removed"}
+                await cls._increment_venue_vote_count(db, venue_id, 1)
+                result = {"voted": True, "action": "added"}
 
-            # Change vote - decrement old, increment new
-            old_venue = await VenueOption.objects.filter(db, id=existing.venue_id).first()
-            if old_venue:
-                await VenueOption.objects.filter(db, id=old_venue.id).update(
-                    vote_count=old_venue.vote_count - 1
-                )
-
-            await Vote.objects.filter(db, id=existing.id).update(venue_id=venue_id)
-            await VenueOption.objects.filter(db, id=venue_id).update(
-                vote_count=venue.vote_count + 1
-            )
-            return {"voted": True, "action": "changed"}
-
-        # New vote
-        await Vote.objects.create(
-            db,
-            period_id=period_id,
-            venue_id=venue_id,
-            member_id=member_id,
-        )
-        await VenueOption.objects.filter(db, id=venue_id).update(
-            vote_count=venue.vote_count + 1
-        )
-
-        return {"voted": True, "action": "added"}
+            await db.prepare("COMMIT").run()
+            return result
+        except Exception:
+            await db.prepare("ROLLBACK").run()
+            raise
 
     @classmethod
     async def complete_period(cls, db, period_id: str, organizer_id: str) -> dict | None:
@@ -228,28 +252,47 @@ class VotingService:
         if period.organizer_id != organizer_id:
             return None
 
+        if period.status == "completed":
+            return await cls._format_period(db, period)
+
         if period.status != "voting":
             return None
 
         # Find venue with most votes
-        venues = (
-            await VenueOption.objects.filter(db, period_id=period_id)
-            .order_by("-vote_count")
-            .all()
-        )
+        venues = await VenueOption.objects.filter(db, period_id=period_id).all()
 
         if not venues:
             return None
 
-        winner = venues[0]
+        winner = sorted(
+            venues,
+            key=lambda candidate: (
+                -candidate.vote_count,
+                candidate.created_at,
+                str(candidate.id),
+            ),
+        )[0]
         now = datetime.now(timezone.utc)
+        await db.prepare(
+            """
+            UPDATE lunch_periods
+            SET status = 'completed',
+                winning_venue_id = ?,
+                end_date = ?
+            WHERE id = ? AND status = 'voting'
+            """
+        ).bind(str(winner.id), now, str(period_id)).run()
 
-        # Update period
-        await LunchPeriod.objects.filter(db, id=period_id).update(
-            status="completed",
-            winning_venue_id=str(winner.id),
-            end_date=now,
-        )
+        period = await LunchPeriod.objects.filter(db, id=period_id).first()
+        if not period or period.status != "completed":
+            # Someone else won this period in parallel or transition failed.
+            return await cls._format_period(db, period) if period else None
+        if period.winning_venue_id != str(winner.id):
+            winner = await VenueOption.objects.filter(
+                db, id=period.winning_venue_id
+            ).first()
+            if winner is None:
+                return await cls._format_period(db, period)
 
         # Update organizer stats
         await RotationService.increment_organizer_points(db, organizer_id)
@@ -275,10 +318,32 @@ class VotingService:
             
             # Apply pagination
             periods = periods[offset:offset + limit]
+
+            period_ids = [str(period.id) for period in periods]
+            if not period_ids:
+                return []
+
+            venues = await VenueOption.objects.filter(db, period_id__in=period_ids).all()
+            votes = await Vote.objects.filter(db, period_id__in=period_ids).all()
+            venues_by_period: dict[str, list] = defaultdict(list)
+            for venue in venues:
+                venues_by_period[str(venue.period_id)].append(venue)
+
+            votes_by_period: dict[str, list] = defaultdict(list)
+            for vote in votes:
+                votes_by_period[str(vote.period_id)].append(vote)
             
             result = []
             for period in periods:
-                formatted = await cls._format_period(db, period)
+                period_id = str(period.id)
+                venue_options = venues_by_period.get(period_id, [])
+                period_votes = votes_by_period.get(period_id, [])
+                formatted = await cls._format_period(
+                    db,
+                    period,
+                    venue_options,
+                    period_votes,
+                )
                 result.append(formatted)
 
             return result

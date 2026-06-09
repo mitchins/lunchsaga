@@ -25,15 +25,14 @@ test.describe('CUJ: Admin', () => {
       page.locator('button[role="switch"]')
     ).first();
     
-    if (await holidayToggle.isVisible()) {
-      const initialState = await holidayToggle.getAttribute('aria-checked');
-      
-      // Click it
-      await holidayToggle.click();
-      
-      // Verify UI state changed (optimistic update)
-      // We don't check persistence as that's an API concern
-      await expect(holidayToggle).not.toHaveAttribute('aria-checked', initialState || 'false');
-    }
+    await expect(holidayToggle).toBeVisible();
+    const initialState = await holidayToggle.getAttribute('aria-checked');
+
+    // Click it
+    await holidayToggle.click();
+
+    // Verify UI state changed (optimistic update)
+    // We don't check persistence as that's an API concern
+    await expect(holidayToggle).not.toHaveAttribute('aria-checked', initialState || 'false');
   });
 });

@@ -146,8 +146,8 @@ test.describe('Accessibility', () => {
     // This is hard to test reliably across all environments, so we make it soft
     const focusedElement = page.locator('*:focus');
     const hasFocus = await focusedElement.count() > 0;
-    
-    // expect(hasFocus).toBeTruthy(); // Commented out to reduce flakiness
+
+    expect(hasFocus).toBeTruthy();
   });
 
   test.skip('switch controls have proper ARIA roles', async ({ authenticatedPage: page }) => {

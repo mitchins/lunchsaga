@@ -13,19 +13,19 @@ import { Label } from '@/components/ui/label'
 import { Plus } from '@phosphor-icons/react'
 
 interface AddMemberDialogProps {
-  onAdd: (name: string) => void
+  onAdd: (email: string) => void
   averagePoints: number
 }
 
 export function AddMemberDialog({ onAdd, averagePoints }: AddMemberDialogProps) {
   const [open, setOpen] = useState(false)
-  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (name.trim()) {
-      onAdd(name.trim())
-      setName('')
+    if (email.trim()) {
+      onAdd(email.trim())
+      setEmail('')
       setOpen(false)
     }
   }
@@ -45,21 +45,22 @@ export function AddMemberDialog({ onAdd, averagePoints }: AddMemberDialogProps) 
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Label htmlFor="name">Name</Label>
+              <Label htmlFor="email">Email</Label>
             <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter member name"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter member email"
               className="mt-2"
               autoFocus
+              type="email"
             />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!name.trim()}>
+            <Button type="submit" disabled={!email.trim()}>
               Add Member
             </Button>
           </DialogFooter>

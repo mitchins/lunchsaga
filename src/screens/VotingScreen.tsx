@@ -6,6 +6,7 @@ import { VoteButtons } from '@/components/VoteButtons'
 import { EmptyState } from '@/components/EmptyState'
 import { CalendarBlankIcon } from '@phosphor-icons/react'
 import { Progress } from '@/components/ui/progress'
+import { useState } from 'react'
 
 interface VotingScreenProps {
   readonly period: LunchPeriod | null
@@ -69,6 +70,20 @@ export function VotingScreen({
     0,
   )
   const progressValue = activeMembers > 0 ? (totalVotes / activeMembers) * 100 : 0
+  const [isCompleting, setIsCompleting] = useState(false)
+
+  const handleComplete = async () => {
+    if (isCompleting) {
+      return
+    }
+
+    setIsCompleting(true)
+    try {
+      await onComplete()
+    } finally {
+      setIsCompleting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -97,7 +112,12 @@ export function VotingScreen({
 
         {userHasVoted && totalVotes === activeMembers && (
           <div className="mb-6">
-            <Button onClick={onComplete} size="lg" className="w-full">
+            <Button
+              onClick={handleComplete}
+              size="lg"
+              className="w-full"
+              disabled={isCompleting}
+            >
               Complete Voting
             </Button>
           </div>

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface SettingsScreenProps {
   team: Team
@@ -24,6 +24,24 @@ export function SettingsScreen({
   onUpdateTeam,
 }: SettingsScreenProps) {
   const [teamName, setTeamName] = useState(team.name)
+  const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    setTeamName(team.name)
+  }, [team.name])
+
+  const canSaveTeamName = teamName.trim() && teamName.trim() !== team.name
+  const handleSaveTeamName = async () => {
+    if (!canSaveTeamName || !onUpdateTeam) return
+    const nextTeamName = teamName.trim()
+
+    setIsSaving(true)
+    try {
+      await onUpdateTeam({ name: nextTeamName })
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,6 +64,14 @@ export function SettingsScreen({
                   placeholder="Engineering Team"
                 />
               </div>
+
+              <Button
+                type="button"
+                onClick={handleSaveTeamName}
+                disabled={!canSaveTeamName || isSaving}
+              >
+                Save Team Name
+              </Button>
 
               <div className="flex items-center gap-3">
                 <div className="text-4xl">{team.emoji}</div>

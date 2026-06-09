@@ -25,8 +25,9 @@ class AuthService:
         """Get JWT secret from environment"""
         secret = getattr(env, "JWT_SECRET", None)
         if not secret:
-            # Fallback for development only
-            if getattr(env, "ENVIRONMENT", "development") == "development":
+            environment = getattr(env, "ENVIRONMENT", "production").lower()
+            # Fallback for non-production environments
+            if environment != "production":
                 return "dev-secret-do-not-use-in-production"
             raise ValueError("JWT_SECRET must be set in production")
         return secret
@@ -64,8 +65,9 @@ class AuthService:
         Generate and store magic link + OTP code.
         Sends email via SES in production or mock in development.
         """
-        # Dev-only OTP bypass — only active when ENVIRONMENT is explicitly non-production
-        is_production = getattr(env, "ENVIRONMENT", "production") != "development"
+        # Dev-only OTP bypass - use the configured code in non-production environments.
+        environment = getattr(env, "ENVIRONMENT", "production").lower()
+        is_production = environment == "production"
         dev_otp = getattr(env, "DEV_OTP_CODE", None)
         code = dev_otp if (dev_otp and not is_production) else cls._generate_code()
 
@@ -95,8 +97,7 @@ class AuthService:
         )
 
         # In development, also log for convenience
-        environment = getattr(env, "ENVIRONMENT", "development")
-        if environment == "development":
+        if not is_production:
             print(f"[DEV] Magic link for {email}: code={code}, token={token}")
 
         return {"sent": True, "email": email}
@@ -110,7 +111,7 @@ class AuthService:
 
         # Try to find by token first
         link = await MagicLink.objects.filter(
-            db, token=code_or_token, used=False
+            db, email=email, token=code_or_token, used=False
         ).first()
 
         # If not found by token, try by code for this email

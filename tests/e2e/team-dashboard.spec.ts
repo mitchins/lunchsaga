@@ -16,15 +16,9 @@ test.describe('Team Dashboard', () => {
     // This is specifically the dashboard roster/team view
     await page.goto('/dashboard/test-team-001');
     
-    // Wait for member content to appear
-    // Relaxed selector to just look for any list item or card
-    await page.waitForSelector('li, article, [class*="card"]', { timeout: 10000 }).catch(() => {
-      console.warn('Member content did not appear');
-    });
-    
-    const memberElements = page.locator('li, article, [class*="card"]');
+    await expect(page.getByRole('heading', { name: /team members/i })).toBeVisible();
     
     // Should have at least one member
-    await expect(memberElements.first()).toBeVisible();
+    await expect(page.locator('.grid.gap-3 h3').first()).toBeVisible();
   });
 });

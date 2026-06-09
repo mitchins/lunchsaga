@@ -6,7 +6,7 @@ invite codes, and member rotation.
 """
 
 import secrets
-from datetime import datetime, timezone
+import string
 
 from models import Team, TeamMember, User
 
@@ -14,25 +14,31 @@ from models import Team, TeamMember, User
 class TeamService:
     """Service for team operations"""
 
+    INVITE_CODE_LENGTH = 8
+
     @staticmethod
     def _generate_invite_code() -> str:
-        """Generate a unique 6-character invite code"""
-        return secrets.token_urlsafe(4).upper()[:6]
+        """Generate an 8-character invite code"""
+        alphabet = string.ascii_uppercase + string.digits
+        return "".join(secrets.choice(alphabet) for _ in range(TeamService.INVITE_CODE_LENGTH))
+
+    @classmethod
+    async def _generate_unique_invite_code(cls, db) -> str:
+        """Generate an invite code that is not already assigned."""
+        for _ in range(10):
+            invite_code = cls._generate_invite_code()
+            existing = await Team.objects.filter(db, invite_code=invite_code).first()
+            if not existing:
+                return invite_code
+
+        raise RuntimeError("Unable to generate a unique invite code")
 
     @classmethod
     async def create_team(
         cls, db, owner_id: str, name: str, emoji: str = "🍕", color: str = "#10b981"
     ) -> dict:
         """Create a new team and add owner as first member"""
-        # Generate unique invite code
-        invite_code = cls._generate_invite_code()
-
-        # Ensure uniqueness (retry if collision)
-        for _ in range(5):
-            existing = await Team.objects.filter(db, invite_code=invite_code).first()
-            if not existing:
-                break
-            invite_code = cls._generate_invite_code()
+        invite_code = await cls._generate_unique_invite_code(db)
 
         # Get owner's name
         owner = await User.objects.filter(db, id=owner_id).first()
@@ -49,12 +55,16 @@ class TeamService:
         )
 
         # Add owner as first member
-        await TeamMember.objects.create(
-            db,
-            team_id=str(team.id),
-            user_id=owner_id,
-            name=owner_name,
-        )
+        try:
+            await TeamMember.objects.create(
+                db,
+                team_id=str(team.id),
+                user_id=owner_id,
+                name=owner_name,
+            )
+        except Exception:
+            await Team.objects.filter(db, id=str(team.id)).delete()
+            raise
 
         return {
             "id": str(team.id),
@@ -204,8 +214,17 @@ class TeamService:
         if team.owner_id == user_id:
             return False
 
-        # Remove membership
-        await TeamMember.objects.filter(db, team_id=team_id, user_id=user_id).delete()
+        member = await TeamMember.objects.filter(
+            db, team_id=team_id, user_id=user_id
+        ).first()
+        if not member:
+            return False
+
+        # Remove achievements tied to this membership before deleting the row.
+        from models import Achievement
+
+        await Achievement.objects.filter(db, member_id=str(member.id)).delete()
+        await TeamMember.objects.filter(db, id=str(member.id)).delete()
         return True
 
     @classmethod
@@ -243,14 +262,7 @@ class TeamService:
         if not team or team.owner_id != user_id:
             return None
 
-        new_code = cls._generate_invite_code()
-
-        # Ensure uniqueness
-        for _ in range(5):
-            existing = await Team.objects.filter(db, invite_code=new_code).first()
-            if not existing:
-                break
-            new_code = cls._generate_invite_code()
+        new_code = await cls._generate_unique_invite_code(db)
 
         await Team.objects.filter(db, id=team_id).update(invite_code=new_code)
         return new_code

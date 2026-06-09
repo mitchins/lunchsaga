@@ -17,11 +17,16 @@ export function TeamHeader({ team, user, memberCount, onBack }: TeamHeaderProps)
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const handleCopyInviteCode = () => {
-    navigator.clipboard.writeText(team.inviteCode)
-    setCopied(true)
-    toast.success('Invite code copied!')
-    setTimeout(() => setCopied(false), 2000)
+  const handleCopyInviteCode = async () => {
+    try {
+      await navigator.clipboard.writeText(team.inviteCode)
+      setCopied(true)
+      toast.success('Invite code copied!')
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error('Failed to copy invite code:', error)
+      toast.error('Could not copy invite code')
+    }
   }
 
   return (

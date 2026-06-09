@@ -3,8 +3,9 @@ LunchSaga API - Minimal test entry point
 """
 
 from kinglet import Kinglet
+from js import Response as JSResponse
 
-app = Kinglet(debug=True)
+app = Kinglet(debug=False)
 
 
 # Health check endpoint
@@ -31,8 +32,5 @@ async def health_check(request):
 async def on_fetch(request, env):
     try:
         return await app(request, env)
-    except Exception as e:
-        import traceback
-        from js import Response as JSResponse
-        error_body = f"FATAL: {type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
-        return JSResponse.new(error_body, status=500)
+    except Exception:
+        return JSResponse.new("Unexpected server error", status=500)

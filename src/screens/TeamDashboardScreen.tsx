@@ -22,7 +22,7 @@ interface TeamDashboardScreenProps {
   readonly isHolidayMode: boolean
   readonly onBack: () => void
   readonly onTeamSwitch: (teamId: string) => void
-  readonly onAddMember: (name: string) => void
+  readonly onAddMember: (email: string) => void
   readonly onRemoveMember: (id: string) => void
   readonly onToggleHoliday: (checked: boolean) => void
   readonly onToggleMemberAway: (memberId: string, isAway: boolean) => void

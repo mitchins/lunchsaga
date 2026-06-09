@@ -62,8 +62,10 @@ async def http_client(base_url: str):
 @pytest.fixture
 async def reset_db(http_client):
     """Reset database before each test"""
-    await http_client.post("/api/_reset")
-    await http_client.post("/api/_migrate")
+    reset_resp = await http_client.post("/api/_reset")
+    assert reset_resp.status_code == 200, f"Failed to reset DB: {reset_resp.text}"
+    migrate_resp = await http_client.post("/api/_migrate")
+    assert migrate_resp.status_code == 200, f"Failed to migrate DB: {migrate_resp.text}"
 
 
 class TestWorkflow_NewUserOnboarding:
@@ -102,7 +104,7 @@ class TestWorkflow_NewUserOnboarding:
         team_id = team["id"]
         invite_code = team["inviteCode"]
         assert team["name"] == "Engineering Squad"
-        assert len(invite_code) == 6
+        assert len(invite_code) == 8
         
         # Step 4: View team (should have 1 member - owner)
         members_resp = await api.get(f"/teams/{team_id}/members")
@@ -513,7 +515,7 @@ class TestWorkflow_TeamOwnerOperations:
         assert regen_resp.status_code == 200
         new_code = regen_resp.json()["inviteCode"]
         assert new_code != original_code
-        assert len(new_code) == 6
+        assert len(new_code) == 8
         
         # Old code should no longer work
         member = APIClient(http_client)
@@ -688,7 +690,7 @@ class TestWorkflow_VotingTieBreaker:
         complete = await owner.post(f"/voting/periods/{period_id}/complete")
         winning_id = complete.json()["period"]["winningVenueId"]
         # Winner should be one of them (implementation decides tie-breaker)
-        assert winning_id in [first_id, second_id]
+        assert winning_id == first_id
 
 
 class TestWorkflow_PeriodStateValidation:

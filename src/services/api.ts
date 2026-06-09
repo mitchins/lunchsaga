@@ -267,10 +267,10 @@ export const teamsAPI = {
       body: JSON.stringify(updates),
     }),
 
-  addMember: (teamId: string, data: { name: string }) =>
+  addMember: (teamId: string, data: { email: string }) =>
     fetchAPI<{ member: TeamMember }>(`/members/teams/${teamId}/members`, {
       method: 'POST',
-      body: JSON.stringify({ email: data.name }), // API expects email, frontend sends name
+      body: JSON.stringify({ email: data.email }),
     }),
 
   removeMember: (teamId: string, memberId: string) =>
