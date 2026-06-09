@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { ReactElement } from 'react'
 import {
   BrowserRouter,
   Navigate,
@@ -119,6 +118,112 @@ function ProfileRoute({
   )
 }
 
+interface TeamDashboardRouteProps {
+  readonly team: Team | null
+  readonly selectedTeamId: string | null
+  readonly isTeamListReady: boolean
+  readonly teams: Team[]
+  readonly members: TeamMember[]
+  readonly currentUserMemberId?: string
+  readonly nextOrganizer: TeamMember | null
+  readonly isHolidayMode: boolean
+  readonly onBack: () => void
+  readonly onTeamSwitch: (teamId: string) => void
+  readonly onAddMember: (email: string) => Promise<void>
+  readonly onRemoveMember: (memberId: string) => Promise<void>
+  readonly onToggleHoliday: (checked: boolean) => Promise<void>
+  readonly onToggleMemberAway: (memberId: string, isAway: boolean) => Promise<void>
+  readonly onNavigateToVote: () => void
+  readonly onNavigateToHistory: () => void
+  readonly onNavigateToProfile: (memberId: string) => void
+}
+
+function TeamDashboardRoute({
+  team,
+  selectedTeamId,
+  isTeamListReady,
+  teams,
+  members,
+  currentUserMemberId,
+  nextOrganizer,
+  isHolidayMode,
+  onBack,
+  onTeamSwitch,
+  onAddMember,
+  onRemoveMember,
+  onToggleHoliday,
+  onToggleMemberAway,
+  onNavigateToVote,
+  onNavigateToHistory,
+  onNavigateToProfile,
+}: TeamDashboardRouteProps) {
+  if (selectedTeamId && !isTeamListReady) {
+    return <LoadingScreen />
+  }
+
+  if (!team) {
+    return <Navigate to="/teams" replace />
+  }
+
+  return (
+    <TeamDashboardScreen
+      team={team}
+      teams={teams}
+      members={members}
+      currentUserMemberId={currentUserMemberId}
+      nextOrganizer={nextOrganizer}
+      isHolidayMode={isHolidayMode}
+      onBack={onBack}
+      onTeamSwitch={onTeamSwitch}
+      onAddMember={onAddMember}
+      onRemoveMember={onRemoveMember}
+      onToggleHoliday={onToggleHoliday}
+      onToggleMemberAway={onToggleMemberAway}
+      onNavigateToVote={onNavigateToVote}
+      onNavigateToHistory={onNavigateToHistory}
+      onNavigateToProfile={onNavigateToProfile}
+    />
+  )
+}
+
+interface SettingsRouteProps {
+  readonly team: Team | null
+  readonly selectedTeamId: string | null
+  readonly isTeamListReady: boolean
+  readonly isHolidayMode: boolean
+  readonly onBack: () => void
+  readonly onToggleHoliday: (checked: boolean) => Promise<void>
+  readonly onUpdateTeam: (updates: Partial<Team>) => Promise<void>
+}
+
+function SettingsRoute({
+  team,
+  selectedTeamId,
+  isTeamListReady,
+  isHolidayMode,
+  onBack,
+  onToggleHoliday,
+  onUpdateTeam,
+}: SettingsRouteProps) {
+  if (selectedTeamId && !isTeamListReady) {
+    return <LoadingScreen />
+  }
+
+  if (!team) {
+    return <Navigate to="/teams" replace />
+  }
+
+  return (
+    <SettingsScreen
+      team={team}
+      isHolidayMode={isHolidayMode}
+      onBack={onBack}
+      onToggleHoliday={onToggleHoliday}
+      onUpdateTeam={onUpdateTeam}
+    />
+  )
+}
+
 function AppRouter() {
   const navigate = useNavigate()
   const dashboardMatch = useMatch('/dashboard/:teamId')
@@ -227,16 +332,6 @@ function AppRouter() {
     }
     loadTeams()
   }, [user])
-
-  const renderTeamRoute = (teamRoute: (team: Team) => ReactElement) => {
-    if (selectedTeamId && !isTeamListReady) {
-      return <LoadingScreen />
-    }
-    if (!selectedTeam) {
-      return <Navigate to="/teams" replace />
-    }
-    return teamRoute(selectedTeam)
-  }
 
   // Load team members when team is selected
   const loadTeamData = useCallback(async (teamId: string) => {
@@ -532,25 +627,25 @@ function AppRouter() {
       <Route
         path="/dashboard/:teamId"
         element={
-          renderTeamRoute((team) =>
-            <TeamDashboardScreen
-              team={team}
-              teams={teams}
-              members={teamMembers}
-              currentUserMemberId={currentUserMember?.id}
-              nextOrganizer={nextOrganizer}
-              isHolidayMode={isHolidayMode}
-              onBack={() => navigate('/teams')}
-              onTeamSwitch={handleTeamSwitch}
-              onAddMember={handleAddMember}
-              onRemoveMember={handleRemoveMember}
-              onToggleHoliday={handleToggleHoliday}
-              onToggleMemberAway={handleToggleMemberAway}
-              onNavigateToVote={() => navigate(`/vote/${selectedTeamId}`)}
-              onNavigateToHistory={() => navigate(`/summary/${selectedTeamId}`)}
-              onNavigateToProfile={(memberId) => navigate(`/profile/${selectedTeamId}/${memberId}`)}
-            />
-          )
+          <TeamDashboardRoute
+            team={selectedTeam}
+            selectedTeamId={selectedTeamId}
+            isTeamListReady={isTeamListReady}
+            teams={teams}
+            members={teamMembers}
+            currentUserMemberId={currentUserMember?.id}
+            nextOrganizer={nextOrganizer}
+            isHolidayMode={isHolidayMode}
+            onBack={() => navigate('/teams')}
+            onTeamSwitch={handleTeamSwitch}
+            onAddMember={handleAddMember}
+            onRemoveMember={handleRemoveMember}
+            onToggleHoliday={handleToggleHoliday}
+            onToggleMemberAway={handleToggleMemberAway}
+            onNavigateToVote={() => navigate(`/vote/${selectedTeam?.id}`)}
+            onNavigateToHistory={() => navigate(`/summary/${selectedTeam?.id}`)}
+            onNavigateToProfile={(memberId) => navigate(`/profile/${selectedTeam?.id}/${memberId}`)}
+          />
         }
       />
       <Route
@@ -594,15 +689,15 @@ function AppRouter() {
       <Route
         path="/settings/:teamId"
         element={
-          renderTeamRoute(
-            (team) => <SettingsScreen
-              team={team}
-              isHolidayMode={isHolidayMode}
-              onBack={handleBack}
-              onToggleHoliday={handleToggleHoliday}
-              onUpdateTeam={handleUpdateTeam}
-            />
-          )
+          <SettingsRoute
+            team={selectedTeam}
+            selectedTeamId={selectedTeamId}
+            isTeamListReady={isTeamListReady}
+            isHolidayMode={isHolidayMode}
+            onBack={handleBack}
+            onToggleHoliday={handleToggleHoliday}
+            onUpdateTeam={handleUpdateTeam}
+          />
         }
       />
       <Route
