@@ -481,4 +481,122 @@ describe('screen flows', () => {
     expect(screen.getByText('Active')).toBeInTheDocument()
     expect(screen.getByLabelText('Holiday Break Mode')).toBeInTheDocument()
   })
+
+  it('does not expose profile editing controls for non-own members', () => {
+    render(
+      <ProfileScreen
+        member={baseMember}
+        badges={badges}
+        userBadges={userBadges}
+        isOwnProfile={false}
+        onBack={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: 'Edit name' })).toBeNull()
+    expect(screen.queryByRole('switch', { name: 'Away Status' })).toBeNull()
+    expect(screen.getByText(baseMember.name)).toBeInTheDocument()
+  })
+
+  it('cancels profile edits without saving', async () => {
+    const user = userEvent.setup()
+    const onUpdateName = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <ProfileScreen
+        member={baseMember}
+        badges={badges}
+        userBadges={userBadges}
+        isOwnProfile={true}
+        onBack={vi.fn()}
+        onUpdateName={onUpdateName}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Edit name' }))
+
+    const input = screen.getByPlaceholderText('Enter your name')
+    await user.clear(input)
+    await user.type(input, 'Temp Name')
+    await user.click(screen.getByRole('button', { name: 'Cancel editing' }))
+
+    expect(onUpdateName).not.toHaveBeenCalled()
+    expect(screen.getByText(baseMember.name)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save name' })).toBeNull()
+  })
+
+  it('shows an error toast when away-state update fails', async () => {
+    const user = userEvent.setup()
+    const onToggleAway = vi.fn().mockRejectedValue(new Error('Network error'))
+
+    render(
+      <ProfileScreen
+        member={baseMember}
+        badges={badges}
+        userBadges={userBadges}
+        isOwnProfile={true}
+        onBack={vi.fn()}
+        onToggleAway={onToggleAway}
+      />,
+    )
+
+    await user.click(screen.getByRole('switch', { name: 'Away Status' }))
+
+    await waitFor(() => expect(sonnerMocks.error).toHaveBeenCalledWith('Failed to update status'))
+  })
+
+  it('keeps next organizer label hidden during holiday mode', () => {
+    render(
+      <TeamDashboardScreen
+        team={baseTeam}
+        teams={[baseTeam]}
+        members={[baseMember]}
+        currentUserMemberId="member-1"
+        nextOrganizer={baseMember}
+        isHolidayMode={true}
+        onBack={vi.fn()}
+        onTeamSwitch={vi.fn()}
+        onAddMember={vi.fn()}
+        onRemoveMember={vi.fn()}
+        onToggleHoliday={vi.fn()}
+        onToggleMemberAway={vi.fn()}
+        onNavigateToVote={vi.fn()}
+        onNavigateToHistory={vi.fn()}
+        onNavigateToProfile={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByText(/Next in the Saga/)).toBeNull()
+    expect(screen.getByText('Active')).toBeInTheDocument()
+  })
+
+  it('switches teams when switcher invokes callback', async () => {
+    const user = userEvent.setup()
+    const onTeamSwitch = vi.fn()
+
+    render(
+      <TeamDashboardScreen
+        team={baseTeam}
+        teams={[
+          baseTeam,
+          { ...baseTeam, id: 'team-2', name: 'Backup Crew' },
+        ]}
+        members={[]}
+        currentUserMemberId={undefined}
+        nextOrganizer={null}
+        isHolidayMode={false}
+        onBack={vi.fn()}
+        onTeamSwitch={onTeamSwitch}
+        onAddMember={vi.fn()}
+        onRemoveMember={vi.fn()}
+        onToggleHoliday={vi.fn()}
+        onToggleMemberAway={vi.fn()}
+        onNavigateToVote={vi.fn()}
+        onNavigateToHistory={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Switch team' }))
+    expect(onTeamSwitch).toHaveBeenCalledWith('team-2')
+  })
 })
