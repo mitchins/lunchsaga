@@ -122,6 +122,7 @@ interface TeamDashboardRouteProps {
   readonly team: Team | null
   readonly selectedTeamId: string | null
   readonly isTeamListReady: boolean
+  readonly isTeamDataReady: boolean
   readonly teams: Team[]
   readonly members: TeamMember[]
   readonly currentUserMemberId?: string
@@ -142,6 +143,7 @@ function TeamDashboardRoute({
   team,
   selectedTeamId,
   isTeamListReady,
+  isTeamDataReady,
   teams,
   members,
   currentUserMemberId,
@@ -157,7 +159,7 @@ function TeamDashboardRoute({
   onNavigateToHistory,
   onNavigateToProfile,
 }: TeamDashboardRouteProps) {
-  if (selectedTeamId && !isTeamListReady) {
+  if (selectedTeamId && (!isTeamListReady || !isTeamDataReady)) {
     return <LoadingScreen />
   }
 
@@ -263,7 +265,7 @@ function AppRouter() {
     null
 
   // Derived state
-  const selectedTeam = selectedTeamId ? teams.find((t) => t.id === selectedTeamId) ?? null : null
+  const selectedTeam = teams.find((t) => t.id === selectedTeamId) ?? null
   const teamMembers = selectedTeamId ? members.filter((m) => m.teamId === selectedTeamId) : []
   const nextOrganizer = getNextOrganizer(teamMembers)
   const isSelectedTeamDataReady = selectedTeamId !== null && loadedTeamDataId === selectedTeamId && !isTeamDataLoading
@@ -631,6 +633,7 @@ function AppRouter() {
             team={selectedTeam}
             selectedTeamId={selectedTeamId}
             isTeamListReady={isTeamListReady}
+            isTeamDataReady={isSelectedTeamDataReady}
             teams={teams}
             members={teamMembers}
             currentUserMemberId={currentUserMember?.id}

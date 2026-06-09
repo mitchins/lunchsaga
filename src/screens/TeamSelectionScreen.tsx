@@ -37,6 +37,7 @@ export function TeamSelectionScreen({ user, teams, onSelectTeam, onCreateTeam, o
       emoji: selectedEmoji,
       color: selectedColor.value,
       ownerId: user.id,
+      // Required by Team type; actual value comes from the createTeam backend response
       isHolidayMode: false,
       createdAt: Date.now(),
       inviteCode: '', // API will generate the real invite code
