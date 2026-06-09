@@ -19,6 +19,25 @@ interface VotingScreenProps {
   readonly onStartWeek: () => void
 }
 
+interface VotingCompletionParams {
+  readonly isCompleting: boolean
+  readonly onComplete: () => Promise<void>
+  readonly setIsCompleting: (isCompleting: boolean) => void
+}
+
+export async function completeVoting({ isCompleting, onComplete, setIsCompleting }: VotingCompletionParams) {
+  if (isCompleting) {
+    return
+  }
+
+  setIsCompleting(true)
+  try {
+    await onComplete()
+  } finally {
+    setIsCompleting(false)
+  }
+}
+
 export function VotingScreen({
   period,
   members,
@@ -51,16 +70,11 @@ export function VotingScreen({
   const progressValue = activeMembers > 0 ? (totalVotes / activeMembers) * 100 : 0
 
   const handleComplete = async () => {
-    if (isCompleting) {
-      return
-    }
-
-    setIsCompleting(true)
-    try {
-      await onComplete()
-    } finally {
-      setIsCompleting(false)
-    }
+    await completeVoting({
+      isCompleting,
+      onComplete,
+      setIsCompleting,
+    })
   }
 
   return (
