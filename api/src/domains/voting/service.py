@@ -293,6 +293,7 @@ class VotingService:
             ).first()
             if winner is None:
                 return await cls._format_period(db, period)
+            return await cls._format_period(db, period)
 
         # Update organizer stats
         await RotationService.increment_organizer_points(db, organizer_id)

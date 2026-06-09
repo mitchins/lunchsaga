@@ -2,7 +2,7 @@ name: Build
 on:
   push:
     branches:
-      - main_init
+      - main
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -44,7 +44,7 @@ jobs:
   deploy-non-prod:
     name: Deploy to Cloudflare Pages (Non-Prod)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main_init'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: sonarqube
     permissions:
       contents: read

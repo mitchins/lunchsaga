@@ -19,6 +19,6 @@ test.describe('Team Dashboard', () => {
     await expect(page.getByRole('heading', { name: /team members/i })).toBeVisible();
     
     // Should have at least one member
-    await expect(page.locator('.grid.gap-3 h3').first()).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3 }).first()).toBeVisible();
   });
 });

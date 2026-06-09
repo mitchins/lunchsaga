@@ -33,26 +33,41 @@ class TeamService:
 
         raise RuntimeError("Unable to generate a unique invite code")
 
+    @staticmethod
+    def _is_invite_code_unique_error(exc: Exception) -> bool:
+        message = str(exc).lower()
+        return "invite_code" in message and "unique" in message
+
     @classmethod
     async def create_team(
         cls, db, owner_id: str, name: str, emoji: str = "🍕", color: str = "#10b981"
     ) -> dict:
         """Create a new team and add owner as first member"""
-        invite_code = await cls._generate_unique_invite_code(db)
+        team = None
 
         # Get owner's name
         owner = await User.objects.filter(db, id=owner_id).first()
         owner_name = owner.name if owner else "Unknown"
 
-        # Create team
-        team = await Team.objects.create(
-            db,
-            name=name,
-            emoji=emoji,
-            color=color,
-            owner_id=owner_id,
-            invite_code=invite_code,
-        )
+        # Create team with retry-safe invite code handling.
+        for _ in range(10):
+            invite_code = cls._generate_invite_code()
+            try:
+                team = await Team.objects.create(
+                    db,
+                    name=name,
+                    emoji=emoji,
+                    color=color,
+                    owner_id=owner_id,
+                    invite_code=invite_code,
+                )
+                break
+            except Exception as exc:
+                if not cls._is_invite_code_unique_error(exc):
+                    raise
+
+        if not team:
+            raise RuntimeError("Unable to generate a unique invite code")
 
         # Add owner as first member
         try:
@@ -262,7 +277,13 @@ class TeamService:
         if not team or team.owner_id != user_id:
             return None
 
-        new_code = await cls._generate_unique_invite_code(db)
+        for _ in range(10):
+            new_code = cls._generate_invite_code()
+            try:
+                await Team.objects.filter(db, id=team_id).update(invite_code=new_code)
+                return new_code
+            except Exception as exc:
+                if not cls._is_invite_code_unique_error(exc):
+                    raise
 
-        await Team.objects.filter(db, id=team_id).update(invite_code=new_code)
-        return new_code
+        raise RuntimeError("Unable to regenerate a unique invite code")

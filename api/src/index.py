@@ -69,7 +69,7 @@ async def migrate_database(request):
     if env == "staging":
         auth_header = request.header("Authorization", "")
         expected_token = getattr(request.env, "MIGRATION_TOKEN", "")
-        if auth_header != f"Bearer {expected_token}":
+        if not expected_token or auth_header != f"Bearer {expected_token}":
             return {"error": "Unauthorized"}, 401
 
     models = [
@@ -123,7 +123,7 @@ async def reset_database(request):
     if env == "staging":
         auth_header = request.header("Authorization", "")
         expected_token = getattr(request.env, "MIGRATION_TOKEN", "")
-        if auth_header != f"Bearer {expected_token}":
+        if not expected_token or auth_header != f"Bearer {expected_token}":
             return {"error": "Unauthorized"}, 401
 
     models = [

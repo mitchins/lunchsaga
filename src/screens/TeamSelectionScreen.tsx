@@ -252,7 +252,7 @@ export function TeamSelectionScreen({ user, teams, onSelectTeam, onCreateTeam, o
               <Button type="button" variant="outline" onClick={() => setJoinDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={!inviteCode.trim()}>
+              <Button type="submit" disabled={inviteCode.trim().length !== 8}>
                 Join Team
               </Button>
             </DialogFooter>

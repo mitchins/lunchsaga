@@ -21,13 +21,19 @@ class AuthService:
     JWT_EXPIRY_DAYS = 30
 
     @staticmethod
+    def _is_dev_environment(env) -> bool:
+        environment = (
+            str(getattr(env, "ENVIRONMENT", None) or "production").strip().lower()
+        )
+        return environment in {"development", "dev", "test", "local"}
+
+    @staticmethod
     def _get_jwt_secret(env) -> str:
         """Get JWT secret from environment"""
         secret = getattr(env, "JWT_SECRET", None)
         if not secret:
-            environment = (getattr(env, "ENVIRONMENT", "production") or "production").lower()
-            # Fallback for non-production environments
-            if environment != "production":
+            # Fallback for non-production environments only when explicitly configured.
+            if AuthService._is_dev_environment(env):
                 return "dev-secret-do-not-use-in-production"
             raise ValueError("JWT_SECRET must be set in production")
         return secret
@@ -66,8 +72,7 @@ class AuthService:
         Sends email via SES in production or mock in development.
         """
         # Dev-only OTP bypass - use the configured code in non-production environments.
-        environment = (getattr(env, "ENVIRONMENT", "production") or "production").lower()
-        is_production = environment == "production"
+        is_production = not cls._is_dev_environment(env)
         dev_otp = getattr(env, "DEV_OTP_CODE", None)
         code = dev_otp if (dev_otp and not is_production) else cls._generate_code()
 

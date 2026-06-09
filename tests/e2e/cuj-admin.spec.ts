@@ -27,12 +27,16 @@ test.describe('CUJ: Admin', () => {
     
     await expect(holidayToggle).toBeVisible();
     const initialState = await holidayToggle.getAttribute('aria-checked');
+    expect(initialState === 'true' || initialState === 'false').toBeTruthy();
 
     // Click it
     await holidayToggle.click();
 
     // Verify UI state changed (optimistic update)
     // We don't check persistence as that's an API concern
-    await expect(holidayToggle).not.toHaveAttribute('aria-checked', initialState || 'false');
+    await expect(holidayToggle).toHaveAttribute(
+      'aria-checked',
+      initialState === 'true' ? 'false' : 'true'
+    );
   });
 });

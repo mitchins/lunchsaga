@@ -15,7 +15,7 @@ interface VotingScreenProps {
   readonly isHolidayMode: boolean
   readonly onBack: () => void
   readonly onVote: (venueId: string) => void
-  readonly onComplete: () => void
+  readonly onComplete: () => void | Promise<void>
   readonly onStartWeek: () => void
 }
 
