@@ -17,9 +17,17 @@ test.describe('Team Dashboard', () => {
     await navigateAndWait(page, '/dashboard/test-team-001');
     await expect(page).toHaveURL(/\/dashboard\/test-team-001(?:\/)?(?:\?.*)?$/, { timeout: 12000 });
 
-    const rosterContent = page.locator('[data-testid="team-member"]').first().or(page.getByText('Your Fellowship Awaits'));
+    const teamMembers = page.locator('[data-testid="team-member"]');
+    const emptyStateText = page.getByText('Your Fellowship Awaits');
     const heading = page.getByRole('heading', { name: /team members/i }).first();
 
-    await expect(rosterContent.or(heading)).toBeVisible({ timeout: 12000 });
+    await expect(heading).toBeVisible({ timeout: 12000 });
+
+    const hasTeamMembers = await teamMembers.count() > 0;
+    if (hasTeamMembers) {
+      await expect(teamMembers.first()).toBeVisible({ timeout: 12000 });
+    } else {
+      await expect(emptyStateText).toBeVisible();
+    }
   });
 });

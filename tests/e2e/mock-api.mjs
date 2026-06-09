@@ -248,6 +248,26 @@ async function handleRequest(req, res) {
       return sendJSON(res, { team });
     }
 
+    if (method === 'PUT' && url.startsWith('/api/teams/')) {
+      const parts = url.split('/');
+      const teamId = parts[3];
+      const team = mockTeams[teamId];
+      if (!team) {
+        console.log(`[MOCK-API] Team ${teamId} not found. Available teams:`, Object.keys(mockTeams));
+        return sendJSON(res, { error: 'Team not found' }, 404);
+      }
+
+      const body = await parseBody(req);
+      if (body.name !== undefined) team.name = String(body.name);
+      if (body.emoji !== undefined) team.emoji = String(body.emoji);
+      if (body.color !== undefined) team.color = String(body.color);
+      if (body.isHolidayMode !== undefined) team.isHolidayMode = Boolean(body.isHolidayMode);
+      if (body.ownerId !== undefined) team.ownerId = String(body.ownerId);
+      if (body.inviteCode !== undefined) team.inviteCode = String(body.inviteCode);
+
+      return sendJSON(res, { team });
+    }
+
     if (method === 'GET' && url.startsWith('/api/teams/')) {
       const parts = url.split('/');
       const teamId = parts[3];
@@ -306,4 +326,3 @@ export function startMockAPI() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   startMockAPI();
 }
-
