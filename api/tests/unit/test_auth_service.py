@@ -7,6 +7,7 @@ These tests use:
 """
 
 import pytest
+from datetime import datetime, timedelta, timezone
 
 from kinglet.testing import MockD1Database, MockEmailSender
 
@@ -104,6 +105,35 @@ class TestAuthService:
         assert link.used is True
 
     @pytest.mark.asyncio
+    async def test_verify_prefers_newest_unused_code(self, db, env):
+        """Prefer the newest unused OTP when multiple candidates exist."""
+        email = "newest@example.com"
+        now = datetime.now(timezone.utc)
+
+        await MagicLink.objects.create(
+            db,
+            email=email,
+            code="123456",
+            token="older-token",
+            expires_at=now + timedelta(minutes=5),
+        )
+        await MagicLink.objects.create(
+            db,
+            email=email,
+            code="123456",
+            token="newer-token",
+            expires_at=now + timedelta(minutes=10),
+        )
+
+        result = await AuthService.verify(db, email, "123456", env)
+        assert result is not None
+        assert result["user"]["email"] == email
+
+        used_links = await MagicLink.objects.filter(db, email=email, code="123456", used=True).all()
+        assert len(used_links) == 1
+        assert used_links[0].token == "newer-token"
+
+    @pytest.mark.asyncio
     async def test_verify_with_invalid_code(self, db, env):
         """Test verification with invalid code"""
         email = "user@example.com"
@@ -114,6 +144,28 @@ class TestAuthService:
         result = await AuthService.verify(db, email, "999999", env)
 
         assert result is None
+
+    @pytest.mark.asyncio
+    async def test_verify_does_not_consume_link_on_jwt_failure(self, db, env, monkeypatch):
+        """Keep the magic link unused if JWT creation fails."""
+        email = "rollback@example.com"
+
+        await AuthService.send_magic_link(db, email, env)
+        link_before = await MagicLink.objects.filter(db, email=email).first()
+        assert link_before is not None
+        assert link_before.used is False
+
+        def explode(_env):
+            raise RuntimeError("JWT signing failed")
+
+        monkeypatch.setattr(AuthService, "_get_jwt_secret", explode)
+
+        with pytest.raises(RuntimeError):
+            await AuthService.verify(db, email, "000000", env)
+
+        link_after = await MagicLink.objects.filter(db, email=email, token=link_before.token).first()
+        assert link_after is not None
+        assert link_after.used is False
 
     @pytest.mark.asyncio
     async def test_verify_creates_new_user(self, db, env):

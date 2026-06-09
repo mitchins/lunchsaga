@@ -79,6 +79,30 @@ export async function closeToasts(page: Page) {
 export async function navigateAndWait(page: Page, path: string): Promise<void> {
   await page.goto(path);
   await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    (expectedPath) => window.location.pathname === expectedPath,
+    path,
+    { timeout: 12000 },
+  ).catch(() => {
+    // Route transitions can be redirected under auth/bootstrap timing; callers can still
+    // assert required route state when this expectation is intentionally best-effort.
+  });
+  await page.locator('text=Loading your saga...').waitFor({
+    state: 'hidden',
+    timeout: 12000,
+  }).catch(() => {
+    // If startup loading is delayed under CI, callers assert the final UI before interacting.
+  });
+  const focusable = page.locator(
+    'button:visible, a[href]:visible, input:visible, select:visible, textarea:visible, [role="button"]:visible, [role="switch"]:visible, [role="link"]:visible, [tabindex]:not([tabindex="-1"]):visible'
+  );
+
+  // Some routes can show role elements only after route-driven async data.
+  if (path.includes('/dashboard/') || path.includes('/settings/') || path.includes('/leaderboard/') || path.includes('/vote/')) {
+    await focusable.first().waitFor({ state: 'visible', timeout: 12000 }).catch(() => {
+      // Continue: some environments render without visible focusable controls immediately.
+    });
+  }
 
   if (path.includes('/dashboard/')) {
     await expect(page.getByRole('heading', { name: /team members/i })).toBeVisible({ timeout: 10000 }).catch(() => {

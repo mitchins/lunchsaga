@@ -124,9 +124,14 @@ class AuthService:
 
             # If not found by token, try by code for this email.
             if not link:
-                link = await MagicLink.objects.filter(
-                    db, email=email, code=code_or_token, used=False
-                ).first()
+                links = await MagicLink.objects.filter(
+                    db,
+                    email=email,
+                    code=code_or_token,
+                    used=False,
+                ).all()
+                if links:
+                    link = max(links, key=lambda candidate: candidate.expires_at)
 
             if link:
                 # Ensure the link is still valid right before claim.
@@ -135,50 +140,49 @@ class AuthService:
                     # Assume UTC if no timezone info
                     expires_at = expires_at.replace(tzinfo=timezone.utc)
 
-                if expires_at >= now:
-                    await MagicLink.objects.filter(db, id=str(link.id), used=False).update(
-                        used=True
-                    )
-                    await db.prepare("COMMIT").run()
-                else:
+                if expires_at < now:
                     link = None
                     await db.prepare("ROLLBACK").run()
-            else:
-                await db.prepare("ROLLBACK").run()
+
+                if not link:
+                    return None
+
+                user = await User.objects.filter(db, email=email).first()
+                if not user:
+                    # Create new user with email prefix as default name
+                    name = email.split("@")[0]
+                    user = await User.objects.create(db, email=email, name=name)
+
+                # Generate JWT
+                jwt_secret = cls._get_jwt_secret(env)
+                payload = {
+                    "user_id": str(user.id),
+                    "email": user.email,
+                    "exp": datetime.now(timezone.utc)
+                    + timedelta(days=cls.JWT_EXPIRY_DAYS),
+                    "iat": datetime.now(timezone.utc),
+                }
+                token = jwt.encode(payload, jwt_secret, algorithm=cls.JWT_ALGORITHM)
+
+                await MagicLink.objects.filter(db, id=str(link.id), used=False).update(
+                    used=True
+                )
+                await db.prepare("COMMIT").run()
+                return {
+                    "token": token,
+                    "user": {
+                        "id": str(user.id),
+                        "email": user.email,
+                        "name": user.name,
+                        "avatar": user.avatar,
+                    },
+                }
+            await db.prepare("ROLLBACK").run()
         except Exception:
             await db.prepare("ROLLBACK").run()
             raise
 
-        if not link:
-            return None
-
-        # Get or create user
-        user = await User.objects.filter(db, email=email).first()
-        if not user:
-            # Create new user with email prefix as default name
-            name = email.split("@")[0]
-            user = await User.objects.create(db, email=email, name=name)
-
-        # Generate JWT
-        jwt_secret = cls._get_jwt_secret(env)
-        payload = {
-            "user_id": str(user.id),
-            "email": user.email,
-            "exp": datetime.now(timezone.utc)
-            + timedelta(days=cls.JWT_EXPIRY_DAYS),
-            "iat": datetime.now(timezone.utc),
-        }
-        token = jwt.encode(payload, jwt_secret, algorithm=cls.JWT_ALGORITHM)
-
-        return {
-            "token": token,
-            "user": {
-                "id": str(user.id),
-                "email": user.email,
-                "name": user.name,
-                "avatar": user.avatar,
-            },
-        }
+        return None
 
     @classmethod
     async def get_current_user(cls, db, request, env) -> dict | None:

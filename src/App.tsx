@@ -138,6 +138,7 @@ function AppRouter() {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [isTeamDataLoading, setIsTeamDataLoading] = useState(false)
   const [loadedTeamDataId, setLoadedTeamDataId] = useState<string | null>(null)
+  const [isTeamListReady, setIsTeamListReady] = useState(false)
   const latestTeamDataRequestRef = useRef(0)
   
   // Voting state
@@ -201,6 +202,7 @@ function AppRouter() {
   // Load teams when user is authenticated
   useEffect(() => {
     if (!user) return
+    setIsTeamListReady(false)
     
     async function loadTeams() {
       try {
@@ -218,10 +220,22 @@ function AppRouter() {
       } catch (error) {
         console.error('Failed to load teams:', error)
         toast.error('Failed to load teams')
+      } finally {
+        setIsTeamListReady(true)
       }
     }
     loadTeams()
   }, [user])
+
+  const renderTeamRoute = (teamRoute: JSX.Element) => {
+    if (selectedTeamId && !isTeamListReady) {
+      return <LoadingScreen />
+    }
+    if (!selectedTeam) {
+      return <Navigate to="/teams" replace />
+    }
+    return teamRoute
+  }
 
   // Load team members when team is selected
   const loadTeamData = useCallback(async (teamId: string) => {
@@ -517,7 +531,7 @@ function AppRouter() {
       <Route
         path="/dashboard/:teamId"
         element={
-          selectedTeam ? (
+          renderTeamRoute(
             <TeamDashboardScreen
               team={selectedTeam}
               teams={teams}
@@ -535,8 +549,6 @@ function AppRouter() {
               onNavigateToHistory={() => navigate(`/summary/${selectedTeamId}`)}
               onNavigateToProfile={(memberId) => navigate(`/profile/${selectedTeamId}/${memberId}`)}
             />
-          ) : (
-            <Navigate to="/teams" replace />
           )
         }
       />
@@ -581,7 +593,7 @@ function AppRouter() {
       <Route
         path="/settings/:teamId"
         element={
-          selectedTeam ? (
+          renderTeamRoute(
             <SettingsScreen
               team={selectedTeam}
               isHolidayMode={isHolidayMode}
@@ -589,8 +601,6 @@ function AppRouter() {
               onToggleHoliday={handleToggleHoliday}
               onUpdateTeam={handleUpdateTeam}
             />
-          ) : (
-            <Navigate to="/teams" replace />
           )
         }
       />

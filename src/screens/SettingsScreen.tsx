@@ -13,7 +13,7 @@ interface SettingsScreenProps {
   isHolidayMode: boolean
   onBack: () => void
   onToggleHoliday: (checked: boolean) => void
-  onUpdateTeam?: (updates: Partial<Team>) => void
+  onUpdateTeam?: (updates: Partial<Team>) => Promise<void>
 }
 
 export function SettingsScreen({
@@ -37,7 +37,7 @@ export function SettingsScreen({
 
     setIsSaving(true)
     try {
-      await Promise.resolve(onUpdateTeam({ name: nextTeamName }))
+      await onUpdateTeam({ name: nextTeamName })
     } finally {
       setIsSaving(false)
     }
@@ -123,7 +123,12 @@ export function SettingsScreen({
                     This will pause all lunch rotations and voting
                   </div>
                 </div>
-                <Switch checked={isHolidayMode} onCheckedChange={onToggleHoliday} />
+                <Switch
+                  checked={isHolidayMode}
+                  onCheckedChange={onToggleHoliday}
+                  data-testid="settings-holiday-toggle"
+                  aria-label="Enable Holiday Mode"
+                />
               </div>
 
               {isHolidayMode && (

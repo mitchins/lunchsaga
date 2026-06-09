@@ -19,11 +19,13 @@ test.describe('CUJ: Admin', () => {
 
   test('can toggle holiday mode (UI only)', async ({ authenticatedPage: page }) => {
     await navigateAndWait(page, '/settings/test-team-001');
-    
+    await expect(page).toHaveURL('**/settings/test-team-001', { timeout: 12000 });
+
     // Find the toggle
-    const holidayToggle = page.getByRole('switch').or(
-      page.locator('button[role="switch"]')
-    ).first();
+    const holidayToggle = page.getByTestId('settings-holiday-toggle')
+      .or(page.getByRole('switch', { name: 'Enable Holiday Mode' }))
+      .or(page.locator('button[role="switch"]'))
+      .first();
     
     await expect(holidayToggle).toBeVisible();
     const initialState = await holidayToggle.getAttribute('aria-checked');

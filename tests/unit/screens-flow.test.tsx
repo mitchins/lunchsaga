@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProfileScreen } from '@/screens/ProfileScreen'
 import { TeamDashboardScreen } from '@/screens/TeamDashboardScreen'
 import { VotingScreen } from '@/screens/VotingScreen'
+import { SettingsScreen } from '@/screens/SettingsScreen'
 import type { LunchPeriod, Team, TeamMember } from '@/lib/types'
 import type { Badge, UserBadge } from '@/mocks/badges'
 
@@ -364,5 +365,49 @@ describe('screen flows', () => {
     await user.click(screen.getByRole('button', { name: 'Complete Voting' }))
 
     expect(onComplete).toHaveBeenCalledTimes(1)
+  })
+
+  it('saves team name with an async update callback', async () => {
+    const user = userEvent.setup()
+    const onUpdateTeam = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <SettingsScreen
+        team={baseTeam}
+        isHolidayMode={false}
+        onBack={vi.fn()}
+        onToggleHoliday={vi.fn()}
+        onUpdateTeam={onUpdateTeam}
+      />,
+    )
+
+    const teamNameInput = screen.getByPlaceholderText('Engineering Team')
+    await user.clear(teamNameInput)
+    await user.type(teamNameInput, 'Team Renamed')
+    await user.click(screen.getByRole('button', { name: 'Save Team Name' }))
+
+    await waitFor(() => expect(onUpdateTeam).toHaveBeenCalledWith({ name: 'Team Renamed' }))
+  })
+
+  it('saves team name with a sync update callback', async () => {
+    const user = userEvent.setup()
+    const onUpdateTeam = vi.fn()
+
+    render(
+      <SettingsScreen
+        team={baseTeam}
+        isHolidayMode={false}
+        onBack={vi.fn()}
+        onToggleHoliday={vi.fn()}
+        onUpdateTeam={onUpdateTeam}
+      />,
+    )
+
+    const teamNameInput = screen.getByPlaceholderText('Engineering Team')
+    await user.clear(teamNameInput)
+    await user.type(teamNameInput, 'Team Synchronous')
+    await user.click(screen.getByRole('button', { name: 'Save Team Name' }))
+
+    expect(onUpdateTeam).toHaveBeenCalledWith({ name: 'Team Synchronous' })
   })
 })

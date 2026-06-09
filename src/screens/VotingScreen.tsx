@@ -15,7 +15,7 @@ interface VotingScreenProps {
   readonly isHolidayMode: boolean
   readonly onBack: () => void
   readonly onVote: (venueId: string) => void
-  readonly onComplete: () => void | Promise<void>
+  readonly onComplete: () => Promise<void>
   readonly onStartWeek: () => void
 }
 
@@ -32,30 +32,7 @@ export function VotingScreen({
   const [isCompleting, setIsCompleting] = useState(false)
 
   if (!period) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <ScreenHeader title="Voting" subtitle="Cast your vote for this week's lunch" onBack={onBack} />
-          <EmptyState
-            icon={<CalendarBlankIcon size={48} />}
-            title="The Chapter Awaits"
-            description={
-              isHolidayMode
-                ? "Your saga is paused. Disable holiday mode to continue your culinary journey."
-                : "A new chapter begins when you start this week's quest."
-            }
-            action={
-              isHolidayMode
-                ? undefined
-                : {
-                    label: 'Begin This Chapter',
-                    onClick: onStartWeek,
-                  }
-            }
-          />
-        </div>
-      </div>
-    )
+    return <EmptyVotingScreen isHolidayMode={isHolidayMode} onBack={onBack} onStartWeek={onStartWeek} />
   }
 
   const organizer = members.find((m) => m.id === period.organizerId)
@@ -162,6 +139,37 @@ export function VotingScreen({
             )
           })}
         </div>
+      </div>
+    </div>
+  )
+}
+
+function EmptyVotingScreen({
+  isHolidayMode,
+  onBack,
+  onStartWeek,
+}: Pick<VotingScreenProps, 'isHolidayMode' | 'onBack' | 'onStartWeek'>) {
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <ScreenHeader title="Voting" subtitle="Cast your vote for this week's lunch" onBack={onBack} />
+        <EmptyState
+          icon={<CalendarBlankIcon size={48} />}
+          title="The Chapter Awaits"
+          description={
+            isHolidayMode
+              ? "Your saga is paused. Disable holiday mode to continue your culinary journey."
+              : "A new chapter begins when you start this week's quest."
+          }
+          action={
+            isHolidayMode
+              ? undefined
+              : {
+                  label: 'Begin This Chapter',
+                  onClick: onStartWeek,
+                }
+          }
+        />
       </div>
     </div>
   )

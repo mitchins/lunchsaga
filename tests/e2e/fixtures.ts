@@ -38,12 +38,14 @@ export const test = base.extend<AuthFixtures>({
   authenticatedPage: async ({ page }, use) => {
     const token = createMockToken();
 
+    // Ensure auth token is available before the app bootstraps.
+    await page.addInitScript((tok) => {
+      window.localStorage.setItem('lunchsaga_token', tok);
+    }, token);
+
     // Start with token set before the first routed render so team-scoped routes
     // can resolve team context in a single navigation pass.
     await page.goto('/');
-    await page.evaluate((tok: string) => {
-      localStorage.setItem('lunchsaga_token', tok);
-    }, token);
 
     const waitForAuth = page.waitForResponse(
       (response) => response.url().includes('/api/auth/me') && response.status() === 200,
@@ -63,12 +65,10 @@ export const test = base.extend<AuthFixtures>({
 
     await page.goto(`/dashboard/${MOCK_TEAM_ID}`);
 
-    try {
-      await Promise.race([waitForAuth, waitForTeams, waitForMembers]);
-    } catch (error) {
-      // If one call fails, we still allow the test bootstrap to continue as long as
-      // a later request succeeds during startup.
-      console.warn('[Fixture] Initial API calls did not complete in time:', error.message);
+    const bootstrapChecks = await Promise.allSettled([waitForAuth, waitForTeams, waitForMembers]);
+    if (bootstrapChecks.every((result) => result.status === 'rejected')) {
+      // If all bootstrap calls failed, log a warning but allow the test to continue.
+      console.warn('[Fixture] Initial API calls did not complete in time.');
     }
 
     await page.waitForLoadState('domcontentloaded');
@@ -78,6 +78,10 @@ export const test = base.extend<AuthFixtures>({
       await page.goto(`/dashboard/${MOCK_TEAM_ID}`);
       await page.waitForLoadState('domcontentloaded');
     }
+
+    await page.locator('text=Loading your saga...').waitFor({ state: 'hidden', timeout: 8000 }).catch(() => {
+      // The spinner can remain briefly visible under cold start; we still continue with explicit test assertions.
+    })
 
     // Keep a final safety wait so fixtures don't race with initial app startup.
     try {
