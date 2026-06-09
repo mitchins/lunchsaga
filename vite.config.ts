@@ -1,11 +1,13 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
+import { fileURLToPath } from 'node:url';
 
 import { resolve } from 'path'
 import { configDefaults } from 'vitest/config'
 
 const projectRoot = process.env.PROJECT_ROOT || import.meta.dirname
+  || fileURLToPath(new URL('.', import.meta.url))
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -34,7 +36,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: [],
+    setupFiles: [resolve(projectRoot, 'tests/unit/vitest.setup.ts')],
     exclude: [...configDefaults.exclude, 'tests/e2e/**/*'],
     coverage: {
       reporter: ['text', 'lcov', 'html'],

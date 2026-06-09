@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -107,11 +107,11 @@ wheels = [
 
 [[package]]
 name = "kinglet"
-version = "1.7.0"
+version = "1.8.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a8/9a/ae1642275070198b6c8fb9a804a799ed9e80f6575e98f1500b961aa7dae7/kinglet-1.7.0.tar.gz", hash = "sha256:920b713096f77c76ba1672dc55a02821c7aab3e25adfae04b284fb7053d6273b", size = 171236, upload-time = "2025-10-13T00:57:30.649Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8e/8e/793ac81b0e315faf74880035b410f15c5b22718bb09adb96161305b46a28/kinglet-1.8.3.tar.gz", hash = "sha256:220d9e151e9cfc353c8869570bb3fc0d85c1c8eb4d89dca850ee763307058224", size = 209440, upload-time = "2025-12-16T08:40:34.956Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/50/be/aecd94f2682f3f58b1dce99f761fef0db2100250641ef184285fe565426a/kinglet-1.7.0-py3-none-any.whl", hash = "sha256:1eff237c8d41faa0974de764f74fb8119e8d2bab1df9f4e62a853c9ce71d2888", size = 80389, upload-time = "2025-10-13T00:57:28.793Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/63/92741a75bbc3ee93ea65129cdf07d7c4a97b31e839f3b109b897bdab4d30/kinglet-1.8.3-py3-none-any.whl", hash = "sha256:3b03ca4f68c2ebb6a822651471739a4dcfff12e7ec6ca290a5ceb48c84772c10", size = 99817, upload-time = "2025-12-16T08:40:33.223Z" },
 ]
 
 [[package]]
@@ -134,7 +134,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "kinglet", specifier = ">=1.7.0" },
+    { name = "kinglet", specifier = ">=1.8.3" },
     { name = "pyjwt", specifier = ">=2.8.0" },
 ]
 

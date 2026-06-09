@@ -38,6 +38,7 @@ class MembersService:
     ) -> dict | None:
         """
         Add a member to a team by email.
+        Caller is expected to pass a validated and normalized email.
         Returns None if user doesn't exist or adder is not the owner.
         """
         from models import Team
@@ -48,12 +49,12 @@ class MembersService:
             return None
 
         # Find user by email, or create a placeholder user
-        user = await User.objects.filter(db, email=email.lower()).first()
+        user = await User.objects.filter(db, email=email).first()
         if not user:
             # Auto-create user with email as name (they'll update on first login)
             user = await User.objects.create(
                 db,
-                email=email.lower(),
+                email=email,
                 name=email.split("@")[0],  # Use email prefix as default name
             )
 

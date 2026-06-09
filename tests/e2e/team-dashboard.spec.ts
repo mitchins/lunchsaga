@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import { selectFirstTeam } from './helpers';
+import { navigateAndWait } from './helpers';
 
 /**
  * Team Dashboard Tests
@@ -14,17 +14,20 @@ test.describe('Team Dashboard', () => {
   test('roster renders team members', async ({ authenticatedPage: page }) => {
     // Focus only on member list rendering (ui-rendering.spec already covers leaderboard)
     // This is specifically the dashboard roster/team view
-    await page.goto('/dashboard/test-team-001');
-    
-    // Wait for member content to appear
-    // Relaxed selector to just look for any list item or card
-    await page.waitForSelector('li, article, [class*="card"]', { timeout: 10000 }).catch(() => {
-      console.warn('Member content did not appear');
-    });
-    
-    const memberElements = page.locator('li, article, [class*="card"]');
-    
-    // Should have at least one member
-    await expect(memberElements.first()).toBeVisible();
+    await navigateAndWait(page, '/dashboard/test-team-001');
+    await expect(page).toHaveURL(/\/dashboard\/test-team-001(?:\/)?(?:\?.*)?$/, { timeout: 12000 });
+
+    const teamMembers = page.locator('[data-testid="team-member"]');
+    const emptyStateText = page.getByText('Your Fellowship Awaits');
+    const heading = page.getByRole('heading', { name: /team members/i }).first();
+
+    await expect(heading).toBeVisible({ timeout: 12000 });
+
+    const hasTeamMembers = await teamMembers.count() > 0;
+    if (hasTeamMembers) {
+      await expect(teamMembers.first()).toBeVisible({ timeout: 12000 });
+    } else {
+      await expect(emptyStateText).toBeVisible();
+    }
   });
 });

@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate, Navigate, useParams } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useParams,
+  useMatch,
+  useNavigate,
+} from 'react-router-dom'
 import { User, Team, TeamMember, LunchPeriod } from '@/lib/types'
 import { getNextOrganizer } from '@/lib/helpers'
 import { LoginScreen } from '@/screens/LoginScreen'
@@ -112,8 +120,14 @@ function ProfileRoute({
 
 function AppRouter() {
   const navigate = useNavigate()
-  const { teamId: urlTeamId } = useParams<{ teamId: string }>()
-  
+  const dashboardMatch = useMatch('/dashboard/:teamId')
+  const voteMatch = useMatch('/vote/:teamId')
+  const leaderboardMatch = useMatch('/leaderboard/:teamId')
+  const profileMatch = useMatch('/profile/:teamId/:memberId')
+  const settingsMatch = useMatch('/settings/:teamId')
+  const summaryMatch = useMatch('/summary/:teamId')
+  const pickerMatch = useMatch('/picker/:teamId')
+
   // Auth state
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -124,6 +138,7 @@ function AppRouter() {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [isTeamDataLoading, setIsTeamDataLoading] = useState(false)
   const [loadedTeamDataId, setLoadedTeamDataId] = useState<string | null>(null)
+  const [isTeamListReady, setIsTeamListReady] = useState(false)
   const latestTeamDataRequestRef = useRef(0)
   
   // Voting state
@@ -131,8 +146,15 @@ function AppRouter() {
   const [history, setHistory] = useState<LunchPeriod[]>([])
   const [isHolidayMode, setIsHolidayMode] = useState(false)
 
-  // Use URL param if available, otherwise null
-  const selectedTeamId = urlTeamId || null
+  const selectedTeamId =
+    dashboardMatch?.params.teamId ||
+    voteMatch?.params.teamId ||
+    leaderboardMatch?.params.teamId ||
+    profileMatch?.params.teamId ||
+    settingsMatch?.params.teamId ||
+    summaryMatch?.params.teamId ||
+    pickerMatch?.params.teamId ||
+    null
 
   // Derived state
   const selectedTeam = selectedTeamId ? teams.find((t) => t.id === selectedTeamId) : null
@@ -140,6 +162,12 @@ function AppRouter() {
   const nextOrganizer = getNextOrganizer(teamMembers)
   const isSelectedTeamDataReady = selectedTeamId !== null && loadedTeamDataId === selectedTeamId && !isTeamDataLoading
   const currentWeek = Math.ceil((Date.now() - (selectedTeam?.createdAt || Date.now())) / (7 * 24 * 60 * 60 * 1000))
+
+  useEffect(() => {
+    if (selectedTeam) {
+      setIsHolidayMode(selectedTeam.isHolidayMode)
+    }
+  }, [selectedTeam?.id, selectedTeam?.isHolidayMode])
 
   // Check authentication on mount
   useEffect(() => {
@@ -174,6 +202,7 @@ function AppRouter() {
   // Load teams when user is authenticated
   useEffect(() => {
     if (!user) return
+    setIsTeamListReady(false)
     
     async function loadTeams() {
       try {
@@ -185,15 +214,28 @@ function AppRouter() {
           color: t.color,
           ownerId: t.ownerId,
           inviteCode: t.inviteCode,
+          isHolidayMode: t.isHolidayMode,
           createdAt: t.createdAt,
         })))
       } catch (error) {
         console.error('Failed to load teams:', error)
         toast.error('Failed to load teams')
+      } finally {
+        setIsTeamListReady(true)
       }
     }
     loadTeams()
   }, [user])
+
+  const renderTeamRoute = (teamRoute: JSX.Element) => {
+    if (selectedTeamId && !isTeamListReady) {
+      return <LoadingScreen />
+    }
+    if (!selectedTeam) {
+      return <Navigate to="/teams" replace />
+    }
+    return teamRoute
+  }
 
   // Load team members when team is selected
   const loadTeamData = useCallback(async (teamId: string) => {
@@ -276,6 +318,7 @@ function AppRouter() {
         color: newTeam.color,
         ownerId: newTeam.ownerId,
         inviteCode: newTeam.inviteCode,
+        isHolidayMode: newTeam.isHolidayMode,
         createdAt: newTeam.createdAt,
       }
       
@@ -299,6 +342,7 @@ function AppRouter() {
         color: team.color,
         ownerId: team.ownerId,
         inviteCode: team.inviteCode,
+        isHolidayMode: team.isHolidayMode,
         createdAt: team.createdAt,
       }
       
@@ -319,16 +363,41 @@ function AppRouter() {
     navigate(`/dashboard/${teamId}`)
   }
 
-  const handleAddMember = async (name: string) => {
+  const handleAddMember = async (email: string) => {
     if (!selectedTeamId) return
     
     try {
-      const { member } = await teamsAPI.addMember(selectedTeamId, { name })
+      const { member } = await teamsAPI.addMember(selectedTeamId, { email })
       setMembers((prev) => [...prev, transformMember(member)])
-      toast.success(`${name} joins the fellowship`)
+      toast.success(`${member.name} joins the fellowship`)
     } catch (error) {
       console.error('Failed to add member:', error)
       toast.error('Failed to add member')
+    }
+  }
+
+  const handleUpdateTeam = async (updates: Partial<Team>) => {
+    if (!selectedTeamId) return
+
+    try {
+      const { team: updatedTeam } = await teamsAPI.updateTeam(selectedTeamId, updates)
+      setTeams((prev) =>
+        prev.map((team) =>
+          team.id === selectedTeamId
+            ? {
+                ...team,
+                ...updatedTeam,
+              }
+            : team
+        )
+      )
+      if (typeof updatedTeam.isHolidayMode === 'boolean') {
+        setIsHolidayMode(updatedTeam.isHolidayMode)
+      }
+      toast.success('Team settings updated')
+    } catch (error) {
+      console.error('Failed to update team:', error)
+      toast.error('Failed to update team settings')
     }
   }
 
@@ -359,6 +428,11 @@ function AppRouter() {
     
     try {
       await teamsAPI.updateTeam(selectedTeamId, { isHolidayMode: checked })
+      setTeams((prev) =>
+        prev.map((team) =>
+          team.id === selectedTeamId ? { ...team, isHolidayMode: checked } : team
+        )
+      )
       setIsHolidayMode(checked)
       toast.success(checked ? '🏖️ The saga pauses for rest' : 'The saga continues!')
     } catch (error) {
@@ -457,7 +531,7 @@ function AppRouter() {
       <Route
         path="/dashboard/:teamId"
         element={
-          selectedTeam ? (
+          renderTeamRoute(
             <TeamDashboardScreen
               team={selectedTeam}
               teams={teams}
@@ -475,8 +549,6 @@ function AppRouter() {
               onNavigateToHistory={() => navigate(`/summary/${selectedTeamId}`)}
               onNavigateToProfile={(memberId) => navigate(`/profile/${selectedTeamId}/${memberId}`)}
             />
-          ) : (
-            <Navigate to="/teams" replace />
           )
         }
       />
@@ -521,15 +593,14 @@ function AppRouter() {
       <Route
         path="/settings/:teamId"
         element={
-          selectedTeam ? (
+          renderTeamRoute(
             <SettingsScreen
               team={selectedTeam}
               isHolidayMode={isHolidayMode}
               onBack={handleBack}
               onToggleHoliday={handleToggleHoliday}
+              onUpdateTeam={handleUpdateTeam}
             />
-          ) : (
-            <Navigate to="/teams" replace />
           )
         }
       />

@@ -37,41 +37,57 @@ type AuthFixtures = {
 export const test = base.extend<AuthFixtures>({
   authenticatedPage: async ({ page }, use) => {
     const token = createMockToken();
-    
-    // Navigate to dashboard with team ID in URL
-    // This way, when the page loads, it has:
-    // 1. JWT token in localStorage
-    // 2. teamId in URL parameter
-    await page.goto(`/dashboard/${MOCK_TEAM_ID}`);
-    
-    // Inject JWT token into localStorage
-    await page.evaluate((tok: string) => {
-      localStorage.setItem('lunchsaga_token', tok);
+
+    // Ensure auth token is available before the app bootstraps.
+    await page.addInitScript((tok) => {
+      window.localStorage.setItem('lunchsaga_token', tok);
     }, token);
-    
-    // Reload so app initializes with token + team ID in URL
-    await page.reload();
-    await page.waitForLoadState('domcontentloaded');
-    
-    // Wait for initial data loads to complete - both auth/me and teams/members
-    try {
-      await Promise.race([
-        page.waitForResponse(response => 
-          response.url().includes('/api/auth/me') && response.status() === 200,
-          { timeout: 5000 }
-        ),
-        page.waitForResponse(response => 
-          response.url().includes(`/api/teams/${MOCK_TEAM_ID}/members`) && response.status() === 200,
-          { timeout: 5000 }
-        ),
-      ]);
-    } catch (e) {
-      // Not a hard failure - auth might use cached data
-      console.warn('[Fixture] Initial API calls did not complete:', e.message);
+
+    // Start with token set before the first routed render so team-scoped routes
+    // can resolve team context in a single navigation pass.
+    await page.goto(`/dashboard/${MOCK_TEAM_ID}`);
+
+    const waitForAuth = page.waitForResponse(
+      (response) => response.url().includes('/api/auth/me') && response.status() === 200,
+      { timeout: 8000 }
+    )
+
+    const waitForTeams = page.waitForResponse(
+      (response) => response.url().includes('/api/teams') && response.status() === 200,
+      { timeout: 8000 }
+    )
+
+    const waitForMembers = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/teams/${MOCK_TEAM_ID}/members`) && response.status() === 200,
+      { timeout: 8000 }
+    )
+
+    const bootstrapChecks = await Promise.allSettled([waitForAuth, waitForTeams, waitForMembers]);
+    if (bootstrapChecks.every((result) => result.status === 'rejected')) {
+      // If all bootstrap calls failed, log a warning but allow the test to continue.
+      console.warn('[Fixture] Initial API calls did not complete in time.');
     }
-    
-    await page.waitForTimeout(300);
-    
+
+    await page.waitForLoadState('domcontentloaded');
+
+    // Ensure we are still on the requested team dashboard path.
+    if (!page.url().includes(`/dashboard/${MOCK_TEAM_ID}`)) {
+      await page.goto(`/dashboard/${MOCK_TEAM_ID}`);
+      await page.waitForLoadState('domcontentloaded');
+    }
+
+    await page.locator('text=Loading your saga...').waitFor({ state: 'hidden', timeout: 8000 }).catch(() => {
+      // The spinner can remain briefly visible under cold start; we still continue with explicit test assertions.
+    })
+
+    // Keep a final safety wait so fixtures don't race with initial app startup.
+    try {
+      await page.waitForSelector('h2:has-text("Team Members")', { timeout: 5000 });
+    } catch (e) {
+      // Not a hard failure if the heading is not ready in time for every test.
+    }
+
     // Page is now authenticated with team selected - tests can navigate to any route
     await use(page);
   },

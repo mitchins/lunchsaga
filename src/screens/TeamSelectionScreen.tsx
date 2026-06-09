@@ -242,8 +242,8 @@ export function TeamSelectionScreen({ user, teams, onSelectTeam, onCreateTeam, o
                 id="invite-code"
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                placeholder="ABC123"
-                maxLength={6}
+                placeholder="ABCD1234"
+                maxLength={8}
                 className="text-center text-lg tracking-wider mt-2"
                 autoFocus
               />
@@ -252,7 +252,7 @@ export function TeamSelectionScreen({ user, teams, onSelectTeam, onCreateTeam, o
               <Button type="button" variant="outline" onClick={() => setJoinDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={!inviteCode.trim()}>
+              <Button type="submit" disabled={inviteCode.trim().length !== 8}>
                 Join Team
               </Button>
             </DialogFooter>

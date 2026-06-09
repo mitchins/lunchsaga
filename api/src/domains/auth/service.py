@@ -21,12 +21,19 @@ class AuthService:
     JWT_EXPIRY_DAYS = 30
 
     @staticmethod
+    def _is_dev_environment(env) -> bool:
+        environment = (
+            str(getattr(env, "ENVIRONMENT", None) or "production").strip().lower()
+        )
+        return environment in {"development", "dev", "test", "local"}
+
+    @staticmethod
     def _get_jwt_secret(env) -> str:
         """Get JWT secret from environment"""
         secret = getattr(env, "JWT_SECRET", None)
         if not secret:
-            # Fallback for development only
-            if getattr(env, "ENVIRONMENT", "development") == "development":
+            # Fallback for non-production environments only when explicitly configured.
+            if AuthService._is_dev_environment(env):
                 return "dev-secret-do-not-use-in-production"
             raise ValueError("JWT_SECRET must be set in production")
         return secret
@@ -64,8 +71,8 @@ class AuthService:
         Generate and store magic link + OTP code.
         Sends email via SES in production or mock in development.
         """
-        # Dev-only OTP bypass — only active when ENVIRONMENT is explicitly non-production
-        is_production = getattr(env, "ENVIRONMENT", "production") != "development"
+        # Dev-only OTP bypass - use the configured code in non-production environments.
+        is_production = not cls._is_dev_environment(env)
         dev_otp = getattr(env, "DEV_OTP_CODE", None)
         code = dev_otp if (dev_otp and not is_production) else cls._generate_code()
 
@@ -95,8 +102,7 @@ class AuthService:
         )
 
         # In development, also log for convenience
-        environment = getattr(env, "ENVIRONMENT", "development")
-        if environment == "development":
+        if not is_production:
             print(f"[DEV] Magic link for {email}: code={code}, token={token}")
 
         return {"sent": True, "email": email}
@@ -107,59 +113,71 @@ class AuthService:
         Verify code or token, return JWT if valid.
         """
         now = datetime.now(timezone.utc)
+        link = None
 
-        # Try to find by token first
-        link = await MagicLink.objects.filter(
-            db, token=code_or_token, used=False
-        ).first()
-
-        # If not found by token, try by code for this email
-        if not link:
+        try:
+            # Try to find and claim by token first
             link = await MagicLink.objects.filter(
-                db, email=email, code=code_or_token, used=False
+                db, email=email, token=code_or_token, used=False
             ).first()
 
-        if not link:
-            return None
+            # If not found by token, try by code for this email.
+            if not link:
+                links = await MagicLink.objects.filter(
+                    db,
+                    email=email,
+                    code=code_or_token,
+                    used=False,
+                ).all()
+                if links:
+                    link = max(links, key=lambda candidate: candidate.expires_at)
 
-        # Check expiration - handle timezone-naive datetimes from DB
-        expires_at = link.expires_at
-        if expires_at.tzinfo is None:
-            # Assume UTC if no timezone info
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if expires_at < now:
-            return None
+            if link:
+                # Ensure the link is still valid right before claim.
+                expires_at = link.expires_at
+                if expires_at.tzinfo is None:
+                    # Assume UTC if no timezone info
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
 
-        # Mark as used
-        await MagicLink.objects.filter(db, id=link.id).update(used=True)
+                if expires_at < now:
+                    link = None
 
-        # Get or create user
-        user = await User.objects.filter(db, email=email).first()
-        if not user:
-            # Create new user with email prefix as default name
-            name = email.split("@")[0]
-            user = await User.objects.create(db, email=email, name=name)
+                if not link:
+                    return None
 
-        # Generate JWT
-        jwt_secret = cls._get_jwt_secret(env)
-        payload = {
-            "user_id": str(user.id),
-            "email": user.email,
-            "exp": datetime.now(timezone.utc)
-            + timedelta(days=cls.JWT_EXPIRY_DAYS),
-            "iat": datetime.now(timezone.utc),
-        }
-        token = jwt.encode(payload, jwt_secret, algorithm=cls.JWT_ALGORITHM)
+                user = await User.objects.filter(db, email=email).first()
+                if not user:
+                    # Create new user with email prefix as default name
+                    name = email.split("@")[0]
+                    user = await User.objects.create(db, email=email, name=name)
 
-        return {
-            "token": token,
-            "user": {
-                "id": str(user.id),
-                "email": user.email,
-                "name": user.name,
-                "avatar": user.avatar,
-            },
-        }
+                # Generate JWT
+                jwt_secret = cls._get_jwt_secret(env)
+                payload = {
+                    "user_id": str(user.id),
+                    "email": user.email,
+                    "exp": datetime.now(timezone.utc)
+                    + timedelta(days=cls.JWT_EXPIRY_DAYS),
+                    "iat": datetime.now(timezone.utc),
+                }
+                token = jwt.encode(payload, jwt_secret, algorithm=cls.JWT_ALGORITHM)
+
+                await MagicLink.objects.filter(db, id=str(link.id), used=False).update(
+                    used=True
+                )
+                return {
+                    "token": token,
+                    "user": {
+                        "id": str(user.id),
+                        "email": user.email,
+                        "name": user.name,
+                        "avatar": user.avatar,
+                    },
+                }
+        except Exception:
+            raise
+
+        return None
 
     @classmethod
     async def get_current_user(cls, db, request, env) -> dict | None:

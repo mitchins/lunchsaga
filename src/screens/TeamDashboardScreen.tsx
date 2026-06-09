@@ -22,7 +22,7 @@ interface TeamDashboardScreenProps {
   readonly isHolidayMode: boolean
   readonly onBack: () => void
   readonly onTeamSwitch: (teamId: string) => void
-  readonly onAddMember: (name: string) => void
+  readonly onAddMember: (email: string) => void
   readonly onRemoveMember: (id: string) => void
   readonly onToggleHoliday: (checked: boolean) => void
   readonly onToggleMemberAway: (memberId: string, isAway: boolean) => void
@@ -85,7 +85,13 @@ export function TeamDashboardScreen({
 
         <div className="flex items-center justify-between mb-6 p-4 bg-card rounded-lg border">
           <div className="flex items-center gap-3">
-            <Switch id="holiday-mode" checked={isHolidayMode} onCheckedChange={onToggleHoliday} />
+            <Switch
+              id="holiday-mode"
+              data-testid="dashboard-holiday-toggle"
+              aria-label="Holiday Break Mode"
+              checked={isHolidayMode}
+              onCheckedChange={onToggleHoliday}
+            />
             <Label htmlFor="holiday-mode" className="cursor-pointer">
               Holiday Break Mode
               {isHolidayMode && (

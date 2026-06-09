@@ -7,6 +7,7 @@ HTTP handlers for member management endpoints.
 from kinglet import Router
 
 from domains.auth.service import AuthService
+from domains.auth.validators import AuthValidators
 from domains.responses import error, forbidden, not_found, server_error, unauthorized
 from domains.teams.service import TeamService
 
@@ -37,9 +38,13 @@ async def add_member(request):
     team_id = request.path_param("team_id")
     body = await request.json() or {}
 
-    email = body.get("email", "").strip().lower()
-    if not email:
-        return error("Email is required", 400)
+    email = body.get("email", "")
+
+    is_valid, err_msg = AuthValidators.validate_email(email)
+    if not is_valid:
+        return error(err_msg, 400)
+
+    email = AuthValidators.normalize_email(email)
 
     try:
         result = await MembersService.add_member(

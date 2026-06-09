@@ -12,6 +12,7 @@ interface LeaderboardScreenProps {
 
 export function LeaderboardScreen({ members, onBack, onSelectMember }: LeaderboardScreenProps) {
   const sortedByReputation = [...members].sort((a, b) => b.reputationScore - a.reputationScore)
+  const isSelectable = Boolean(onSelectMember)
 
   const getMedalIcon = (index: number) => {
     if (index === 0) return <Trophy size={24} weight="fill" className="text-yellow-500" />
@@ -36,12 +37,30 @@ export function LeaderboardScreen({ members, onBack, onSelectMember }: Leaderboa
               member.totalVenuesProposed > 0
                 ? Math.round((member.totalWins / member.totalVenuesProposed) * 100)
                 : 0
+            const cardClassName = isSelectable
+              ? "cursor-pointer hover:shadow-lg transition-all"
+              : "transition-all"
+
+            const cardProps = isSelectable
+              ? {
+                  role: "button",
+                  tabIndex: 0,
+                  onClick: () => onSelectMember?.(member.id),
+                  onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault()
+                      onSelectMember?.(member.id)
+                    }
+                  },
+                  "aria-label": `View profile for ${member.name}`,
+                }
+              : {}
 
             return (
               <Card
                 key={member.id}
-                className="cursor-pointer hover:shadow-lg transition-all"
-                onClick={() => onSelectMember?.(member.id)}
+                className={cardClassName}
+                {...cardProps}
               >
                 <CardContent className="flex items-center gap-4 p-5">
                   <div className="flex items-center gap-3 flex-1">

@@ -39,11 +39,14 @@ export function MemberCard({ member, isNextOrganizer, onRemove, onToggleAway, sh
   }
 
   return (
-    <Card className={cn(
+    <Card
+      data-testid="team-member"
+      className={cn(
       "overflow-hidden transition-all",
       isNextOrganizer && !isAway && "ring-2 ring-saga-gold shadow-lg shadow-saga-gold/20",
       isAway && "opacity-60"
-    )}>
+    )}
+    >
       <div 
         className="p-4 flex items-center gap-3 cursor-pointer hover:bg-saga-gold-muted/30 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}

@@ -128,7 +128,7 @@ class TestDataBuilder:
             print(f"   ❌ Cannot connect to {self.base_url}")
             print("   💡 Start the server with:")
             print("      cd /Users/mitchellcurrie/Projects/lunchsaga")
-            print("      rm -rf python_modules && uv run pywrangler dev --port 3757 --local")
+            print("      uv run pywrangler dev --port 3757 --local")
             return False
         except Exception as e:
             print(f"   ❌ Health check error: {e}")

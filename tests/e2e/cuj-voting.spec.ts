@@ -22,13 +22,11 @@ test.describe('CUJ: Voting', () => {
   test('voting interface elements are present', async ({ authenticatedPage: page }) => {
     await navigateAndWait(page, '/vote/test-team-001');
     
-    // Check for ANY voting related UI to be flexible with mock state
-    // Could be "Start Vote", "Vote Now", or "Voting Closed"
-    const votingUI = page.locator('button').or(
-      page.getByText(/vote|start|begin|closed|holiday/i)
-    );
+    // Either the pre-period state (Begin This Chapter) or active vote cards (Vote buttons) is valid.
+    const beginVote = page.getByRole('button', { name: /begin this chapter/i });
+    const castVote = page.getByRole('button', { name: /^vote$/i });
     
-    await expect(votingUI.first()).toBeVisible();
+    await expect(beginVote.or(castVote)).toBeVisible();
   });
 
   // Skipping actual vote interaction as it requires complex mock state (venues, etc.)

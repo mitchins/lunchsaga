@@ -14,6 +14,7 @@ export interface Team {
   ownerId: string
   createdAt: number
   inviteCode: string
+  isHolidayMode: boolean
 }
 
 export interface TeamMember {

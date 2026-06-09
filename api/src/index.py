@@ -4,6 +4,8 @@ LunchSaga API Entry Point
 Main entry point for the Cloudflare Python Worker using Kinglet framework.
 """
 
+import logging
+
 from kinglet import Kinglet
 from kinglet.middleware import CorsMiddleware
 
@@ -12,7 +14,7 @@ from domains.members.handlers import members_router
 from domains.teams.handlers import teams_router
 from domains.voting.handlers import voting_router
 
-app = Kinglet(debug=True)
+app = Kinglet(debug=False)
 
 # CORS middleware for development
 app.add_middleware(
@@ -69,7 +71,7 @@ async def migrate_database(request):
     if env == "staging":
         auth_header = request.header("Authorization", "")
         expected_token = getattr(request.env, "MIGRATION_TOKEN", "")
-        if auth_header != f"Bearer {expected_token}":
+        if not expected_token or auth_header != f"Bearer {expected_token}":
             return {"error": "Unauthorized"}, 401
 
     models = [
@@ -83,7 +85,11 @@ async def migrate_database(request):
         Achievement,
     ]
 
-    results = await SchemaManager.migrate_all(request.env.DB, models)
+    try:
+        results = await SchemaManager.migrate_all(request.env.DB, models)
+    except Exception as e:
+        logging.exception("Migration failed")
+        return {"error": "Migration failed"}, 500
 
     return {
         "status": "migration_complete",
@@ -120,7 +126,7 @@ async def reset_database(request):
     if env == "staging":
         auth_header = request.header("Authorization", "")
         expected_token = getattr(request.env, "MIGRATION_TOKEN", "")
-        if auth_header != f"Bearer {expected_token}":
+        if not expected_token or auth_header != f"Bearer {expected_token}":
             return {"error": "Unauthorized"}, 401
 
     models = [
@@ -134,21 +140,42 @@ async def reset_database(request):
         Achievement,
     ]
 
+    dropped_tables = []
+    drop_failures = []
+
     # Drop tables in reverse order (to handle foreign keys)
     for model in reversed(models):
         try:
             table_name = model.Meta.table_name
             await request.env.DB.prepare(f"DROP TABLE IF EXISTS {table_name}").run()
+            dropped_tables.append(table_name)
         except Exception:
-            pass
+            drop_failures.append(model.Meta.table_name)
+
+    if drop_failures:
+        return {
+            "error": "Failed to drop tables",
+            "droppedTables": dropped_tables,
+            "failed": drop_failures,
+        }, 500
 
     # Recreate all tables
-    results = await SchemaManager.migrate_all(request.env.DB, models)
+    try:
+        results = await SchemaManager.migrate_all(request.env.DB, models)
+    except Exception as e:
+        logging.exception("Reset failed")
+        return {
+            "error": "Reset failed",
+            "droppedTables": dropped_tables,
+            "droppedTableErrors": drop_failures,
+        }, 500
 
     return {
         "status": "reset_complete",
         "results": results,
         "models": [model.__name__ for model in models],
+        "droppedTables": dropped_tables,
+        "droppedTableErrors": drop_failures,
     }
 
 

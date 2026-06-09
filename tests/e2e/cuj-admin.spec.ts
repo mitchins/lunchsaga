@@ -19,21 +19,28 @@ test.describe('CUJ: Admin', () => {
 
   test('can toggle holiday mode (UI only)', async ({ authenticatedPage: page }) => {
     await navigateAndWait(page, '/settings/test-team-001');
-    
-    // Find the toggle
-    const holidayToggle = page.getByRole('switch').or(
-      page.locator('button[role="switch"]')
-    ).first();
-    
-    if (await holidayToggle.isVisible()) {
-      const initialState = await holidayToggle.getAttribute('aria-checked');
-      
-      // Click it
+    await expect(page).toHaveURL(/\/settings\/test-team-001(?:\/)?(?:\?.*)?$/, { timeout: 12000 });
+
+    // Target the deterministic toggle used by settings screen settings.
+    const holidayToggle = page.getByTestId('settings-holiday-toggle');
+    await expect(holidayToggle).toBeVisible();
+    const initialState = await holidayToggle.getAttribute('aria-checked');
+    await expect(holidayToggle).toHaveAttribute('aria-checked');
+    expect(initialState === 'true' || initialState === 'false').toBeTruthy();
+
+    const toggleAndVerify = async (targetState: string) => {
+      const request = page.waitForResponse((response) => {
+        const pathname = new URL(response.url()).pathname
+        return response.request().method() === 'PUT' && pathname === '/api/teams/test-team-001'
+      });
       await holidayToggle.click();
-      
-      // Verify UI state changed (optimistic update)
-      // We don't check persistence as that's an API concern
-      await expect(holidayToggle).not.toHaveAttribute('aria-checked', initialState || 'false');
+      const response = await request;
+      expect(response.ok()).toBeTruthy();
+      await expect(holidayToggle).toHaveAttribute('aria-checked', targetState);
     }
+
+    const newState = initialState === 'true' ? 'false' : 'true';
+    await toggleAndVerify(newState);
+    await toggleAndVerify(initialState ?? 'false');
   });
 });

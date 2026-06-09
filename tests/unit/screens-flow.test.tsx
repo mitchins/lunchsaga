@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProfileScreen } from '@/screens/ProfileScreen'
 import { TeamDashboardScreen } from '@/screens/TeamDashboardScreen'
 import { VotingScreen } from '@/screens/VotingScreen'
+import { SettingsScreen } from '@/screens/SettingsScreen'
 import type { LunchPeriod, Team, TeamMember } from '@/lib/types'
 import type { Badge, UserBadge } from '@/mocks/badges'
 
@@ -364,5 +365,238 @@ describe('screen flows', () => {
     await user.click(screen.getByRole('button', { name: 'Complete Voting' }))
 
     expect(onComplete).toHaveBeenCalledTimes(1)
+  })
+
+  it('saves team name with an async update callback', async () => {
+    const user = userEvent.setup()
+    const onUpdateTeam = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <SettingsScreen
+        team={baseTeam}
+        isHolidayMode={false}
+        onBack={vi.fn()}
+        onToggleHoliday={vi.fn()}
+        onUpdateTeam={onUpdateTeam}
+      />,
+    )
+
+    const teamNameInput = screen.getByPlaceholderText('Engineering Team')
+    await user.clear(teamNameInput)
+    await user.type(teamNameInput, 'Team Renamed')
+    await user.click(screen.getByRole('button', { name: 'Save Team Name' }))
+
+    await waitFor(() => expect(onUpdateTeam).toHaveBeenCalledWith({ name: 'Team Renamed' }))
+  })
+
+  it('saves team name with a sync update callback', async () => {
+    const user = userEvent.setup()
+    const onUpdateTeam = vi.fn()
+
+    render(
+      <SettingsScreen
+        team={baseTeam}
+        isHolidayMode={false}
+        onBack={vi.fn()}
+        onToggleHoliday={vi.fn()}
+        onUpdateTeam={onUpdateTeam}
+      />,
+    )
+
+    const teamNameInput = screen.getByPlaceholderText('Engineering Team')
+    await user.clear(teamNameInput)
+    await user.type(teamNameInput, 'Team Synchronous')
+    await user.click(screen.getByRole('button', { name: 'Save Team Name' }))
+
+    expect(onUpdateTeam).toHaveBeenCalledWith({ name: 'Team Synchronous' })
+  })
+
+  it('rejects blank profile names and shows a validation error', async () => {
+    const user = userEvent.setup()
+    const onUpdateName = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <ProfileScreen
+        member={baseMember}
+        badges={badges}
+        userBadges={userBadges}
+        isOwnProfile={true}
+        onBack={vi.fn()}
+        onUpdateName={onUpdateName}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Edit name' }))
+
+    const input = screen.getByPlaceholderText('Enter your name')
+    await user.clear(input)
+    await user.type(input, '   ')
+    await user.click(screen.getByRole('button', { name: 'Save name' }))
+
+    expect(sonnerMocks.error).toHaveBeenCalledWith('Name cannot be empty')
+    expect(onUpdateName).not.toHaveBeenCalled()
+  })
+
+  it('does not call profile update when name is unchanged', async () => {
+    const user = userEvent.setup()
+    const onUpdateName = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <ProfileScreen
+        member={baseMember}
+        badges={badges}
+        userBadges={userBadges}
+        isOwnProfile={true}
+        onBack={vi.fn()}
+        onUpdateName={onUpdateName}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Edit name' }))
+    await user.click(screen.getByRole('button', { name: 'Save name' }))
+
+    expect(onUpdateName).not.toHaveBeenCalled()
+  })
+
+  it('renders dashboard empty state and holiday toggle label when there are no members', () => {
+    render(
+      <TeamDashboardScreen
+        team={baseTeam}
+        teams={[baseTeam]}
+        members={[]}
+        nextOrganizer={null}
+        isHolidayMode={true}
+        onBack={vi.fn()}
+        onTeamSwitch={vi.fn()}
+        onAddMember={vi.fn()}
+        onRemoveMember={vi.fn()}
+        onToggleHoliday={vi.fn()}
+        onToggleMemberAway={vi.fn()}
+        onNavigateToVote={vi.fn()}
+        onNavigateToHistory={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Your Fellowship Awaits')).toBeInTheDocument()
+    expect(screen.getByText('Active')).toBeInTheDocument()
+    expect(screen.getByLabelText('Holiday Break Mode')).toBeInTheDocument()
+  })
+
+  it('does not expose profile editing controls for non-own members', () => {
+    render(
+      <ProfileScreen
+        member={baseMember}
+        badges={badges}
+        userBadges={userBadges}
+        isOwnProfile={false}
+        onBack={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: 'Edit name' })).toBeNull()
+    expect(screen.queryByRole('switch', { name: 'Away Status' })).toBeNull()
+    expect(screen.getByText(baseMember.name)).toBeInTheDocument()
+  })
+
+  it('cancels profile edits without saving', async () => {
+    const user = userEvent.setup()
+    const onUpdateName = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <ProfileScreen
+        member={baseMember}
+        badges={badges}
+        userBadges={userBadges}
+        isOwnProfile={true}
+        onBack={vi.fn()}
+        onUpdateName={onUpdateName}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Edit name' }))
+
+    const input = screen.getByPlaceholderText('Enter your name')
+    await user.clear(input)
+    await user.type(input, 'Temp Name')
+    await user.click(screen.getByRole('button', { name: 'Cancel editing' }))
+
+    expect(onUpdateName).not.toHaveBeenCalled()
+    expect(screen.getByText(baseMember.name)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save name' })).toBeNull()
+  })
+
+  it('shows an error toast when away-state update fails', async () => {
+    const user = userEvent.setup()
+    const onToggleAway = vi.fn().mockRejectedValue(new Error('Network error'))
+
+    render(
+      <ProfileScreen
+        member={baseMember}
+        badges={badges}
+        userBadges={userBadges}
+        isOwnProfile={true}
+        onBack={vi.fn()}
+        onToggleAway={onToggleAway}
+      />,
+    )
+
+    await user.click(screen.getByRole('switch', { name: 'Away Status' }))
+
+    await waitFor(() => expect(sonnerMocks.error).toHaveBeenCalledWith('Failed to update status'))
+  })
+
+  it('keeps next organizer label hidden during holiday mode', () => {
+    render(
+      <TeamDashboardScreen
+        team={baseTeam}
+        teams={[baseTeam]}
+        members={[baseMember]}
+        currentUserMemberId="member-1"
+        nextOrganizer={baseMember}
+        isHolidayMode={true}
+        onBack={vi.fn()}
+        onTeamSwitch={vi.fn()}
+        onAddMember={vi.fn()}
+        onRemoveMember={vi.fn()}
+        onToggleHoliday={vi.fn()}
+        onToggleMemberAway={vi.fn()}
+        onNavigateToVote={vi.fn()}
+        onNavigateToHistory={vi.fn()}
+        onNavigateToProfile={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByText(/Next in the Saga/)).toBeNull()
+    expect(screen.getByText('Active')).toBeInTheDocument()
+  })
+
+  it('switches teams when switcher invokes callback', async () => {
+    const user = userEvent.setup()
+    const onTeamSwitch = vi.fn()
+
+    render(
+      <TeamDashboardScreen
+        team={baseTeam}
+        teams={[
+          baseTeam,
+          { ...baseTeam, id: 'team-2', name: 'Backup Crew' },
+        ]}
+        members={[]}
+        currentUserMemberId={undefined}
+        nextOrganizer={null}
+        isHolidayMode={false}
+        onBack={vi.fn()}
+        onTeamSwitch={onTeamSwitch}
+        onAddMember={vi.fn()}
+        onRemoveMember={vi.fn()}
+        onToggleHoliday={vi.fn()}
+        onToggleMemberAway={vi.fn()}
+        onNavigateToVote={vi.fn()}
+        onNavigateToHistory={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Switch team' }))
+    expect(onTeamSwitch).toHaveBeenCalledWith('team-2')
   })
 })

@@ -138,16 +138,33 @@ test.describe('Accessibility', () => {
 
   test('interactive elements are keyboard accessible', async ({ authenticatedPage: page }) => {
     await navigateAndWait(page, '/dashboard/test-team-001');
-    
-    // Try to tab through the page
-    await page.keyboard.press('Tab');
-    
-    // Check if something received focus
-    // This is hard to test reliably across all environments, so we make it soft
-    const focusedElement = page.locator('*:focus');
-    const hasFocus = await focusedElement.count() > 0;
-    
-    // expect(hasFocus).toBeTruthy(); // Commented out to reduce flakiness
+    await expect(page).toHaveURL(/\/dashboard\/test-team-001(?:\/)?(?:\?.*)?$/, { timeout: 12000 });
+
+    const focusable = page.locator(
+      'button:visible, a[href]:visible, input:visible, select:visible, textarea:visible, [role="button"]:visible, [role="switch"]:visible, [tabindex]:not([tabindex="-1"]):visible'
+    );
+
+    await focusable.first().waitFor({ state: 'visible', timeout: 12000 });
+    expect(await focusable.count()).toBeGreaterThan(0);
+
+    await focusable.first().focus();
+    await expect(focusable.first()).toBeFocused();
+
+    let hasFocus = false
+    for (let i = 0; i < 8; i++) {
+      await page.keyboard.press('Tab');
+
+      const focusedTag = await page.evaluate(() => {
+        const active = document.activeElement
+        return active ? active.tagName : ''
+      })
+      if (focusedTag && focusedTag !== 'BODY' && focusedTag !== 'HTML') {
+        hasFocus = true
+        break
+      }
+    }
+
+    expect(hasFocus).toBeTruthy();
   });
 
   test.skip('switch controls have proper ARIA roles', async ({ authenticatedPage: page }) => {

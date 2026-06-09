@@ -6,6 +6,7 @@ import { VoteButtons } from '@/components/VoteButtons'
 import { EmptyState } from '@/components/EmptyState'
 import { CalendarBlankIcon } from '@phosphor-icons/react'
 import { Progress } from '@/components/ui/progress'
+import { useState } from 'react'
 
 interface VotingScreenProps {
   readonly period: LunchPeriod | null
@@ -14,8 +15,27 @@ interface VotingScreenProps {
   readonly isHolidayMode: boolean
   readonly onBack: () => void
   readonly onVote: (venueId: string) => void
-  readonly onComplete: () => void
+  readonly onComplete: () => Promise<void>
   readonly onStartWeek: () => void
+}
+
+interface VotingCompletionParams {
+  readonly isCompleting: boolean
+  readonly onComplete: () => Promise<void>
+  readonly setIsCompleting: (isCompleting: boolean) => void
+}
+
+export async function completeVoting({ isCompleting, onComplete, setIsCompleting }: VotingCompletionParams) {
+  if (isCompleting) {
+    return
+  }
+
+  setIsCompleting(true)
+  try {
+    await onComplete()
+  } finally {
+    setIsCompleting(false)
+  }
 }
 
 export function VotingScreen({
@@ -28,31 +48,10 @@ export function VotingScreen({
   onComplete,
   onStartWeek,
 }: VotingScreenProps) {
+  const [isCompleting, setIsCompleting] = useState(false)
+
   if (!period) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <ScreenHeader title="Voting" subtitle="Cast your vote for this week's lunch" onBack={onBack} />
-          <EmptyState
-            icon={<CalendarBlankIcon size={48} />}
-            title="The Chapter Awaits"
-            description={
-              isHolidayMode
-                ? "Your saga is paused. Disable holiday mode to continue your culinary journey."
-                : "A new chapter begins when you start this week's quest."
-            }
-            action={
-              isHolidayMode
-                ? undefined
-                : {
-                    label: 'Begin This Chapter',
-                    onClick: onStartWeek,
-                  }
-            }
-          />
-        </div>
-      </div>
-    )
+    return <EmptyVotingScreen isHolidayMode={isHolidayMode} onBack={onBack} onStartWeek={onStartWeek} />
   }
 
   const organizer = members.find((m) => m.id === period.organizerId)
@@ -69,6 +68,14 @@ export function VotingScreen({
     0,
   )
   const progressValue = activeMembers > 0 ? (totalVotes / activeMembers) * 100 : 0
+
+  const handleComplete = async () => {
+    await completeVoting({
+      isCompleting,
+      onComplete,
+      setIsCompleting,
+    })
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -97,7 +104,12 @@ export function VotingScreen({
 
         {userHasVoted && totalVotes === activeMembers && (
           <div className="mb-6">
-            <Button onClick={onComplete} size="lg" className="w-full">
+            <Button
+              onClick={handleComplete}
+              size="lg"
+              className="w-full"
+              disabled={isCompleting}
+            >
               Complete Voting
             </Button>
           </div>
@@ -141,6 +153,37 @@ export function VotingScreen({
             )
           })}
         </div>
+      </div>
+    </div>
+  )
+}
+
+function EmptyVotingScreen({
+  isHolidayMode,
+  onBack,
+  onStartWeek,
+}: Pick<VotingScreenProps, 'isHolidayMode' | 'onBack' | 'onStartWeek'>) {
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <ScreenHeader title="Voting" subtitle="Cast your vote for this week's lunch" onBack={onBack} />
+        <EmptyState
+          icon={<CalendarBlankIcon size={48} />}
+          title="The Chapter Awaits"
+          description={
+            isHolidayMode
+              ? "Your saga is paused. Disable holiday mode to continue your culinary journey."
+              : "A new chapter begins when you start this week's quest."
+          }
+          action={
+            isHolidayMode
+              ? undefined
+              : {
+                  label: 'Begin This Chapter',
+                  onClick: onStartWeek,
+                }
+          }
+        />
       </div>
     </div>
   )

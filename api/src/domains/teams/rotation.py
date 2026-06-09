@@ -48,10 +48,14 @@ class RotationService:
         if not member:
             return False
 
-        await TeamMember.objects.filter(db, id=member_id).update(
-            points=member.points + 1,
-            total_venues_proposed=member.total_venues_proposed + 1,
-        )
+        await db.prepare(
+            """
+            UPDATE team_members
+            SET points = points + 1,
+                total_venues_proposed = total_venues_proposed + 1
+            WHERE id = ?
+            """
+        ).bind(str(member_id)).run()
         return True
 
     @classmethod
@@ -61,8 +65,12 @@ class RotationService:
         if not member:
             return False
 
-        await TeamMember.objects.filter(db, id=member_id).update(
-            total_wins=member.total_wins + 1,
-            reputation_score=member.reputation_score + 10,
-        )
+        await db.prepare(
+            """
+            UPDATE team_members
+            SET total_wins = total_wins + 1,
+                reputation_score = reputation_score + 10
+            WHERE id = ?
+            """
+        ).bind(str(member_id)).run()
         return True
