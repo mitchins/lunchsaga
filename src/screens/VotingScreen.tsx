@@ -29,6 +29,8 @@ export function VotingScreen({
   onComplete,
   onStartWeek,
 }: VotingScreenProps) {
+  const [isCompleting, setIsCompleting] = useState(false)
+
   if (!period) {
     return (
       <div className="min-h-screen bg-background">
@@ -70,7 +72,6 @@ export function VotingScreen({
     0,
   )
   const progressValue = activeMembers > 0 ? (totalVotes / activeMembers) * 100 : 0
-  const [isCompleting, setIsCompleting] = useState(false)
 
   const handleComplete = async () => {
     if (isCompleting) {

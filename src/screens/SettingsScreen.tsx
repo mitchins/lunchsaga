@@ -37,7 +37,7 @@ export function SettingsScreen({
 
     setIsSaving(true)
     try {
-      await onUpdateTeam({ name: nextTeamName })
+      await Promise.resolve(onUpdateTeam({ name: nextTeamName }))
     } finally {
       setIsSaving(false)
     }
