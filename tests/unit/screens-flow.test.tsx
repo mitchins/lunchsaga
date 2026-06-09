@@ -410,4 +410,75 @@ describe('screen flows', () => {
 
     expect(onUpdateTeam).toHaveBeenCalledWith({ name: 'Team Synchronous' })
   })
+
+  it('rejects blank profile names and shows a validation error', async () => {
+    const user = userEvent.setup()
+    const onUpdateName = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <ProfileScreen
+        member={baseMember}
+        badges={badges}
+        userBadges={userBadges}
+        isOwnProfile={true}
+        onBack={vi.fn()}
+        onUpdateName={onUpdateName}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Edit name' }))
+
+    const input = screen.getByPlaceholderText('Enter your name')
+    await user.clear(input)
+    await user.type(input, '   ')
+    await user.click(screen.getByRole('button', { name: 'Save name' }))
+
+    expect(sonnerMocks.error).toHaveBeenCalledWith('Name cannot be empty')
+    expect(onUpdateName).not.toHaveBeenCalled()
+  })
+
+  it('does not call profile update when name is unchanged', async () => {
+    const user = userEvent.setup()
+    const onUpdateName = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <ProfileScreen
+        member={baseMember}
+        badges={badges}
+        userBadges={userBadges}
+        isOwnProfile={true}
+        onBack={vi.fn()}
+        onUpdateName={onUpdateName}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Edit name' }))
+    await user.click(screen.getByRole('button', { name: 'Save name' }))
+
+    expect(onUpdateName).not.toHaveBeenCalled()
+  })
+
+  it('renders dashboard empty state and holiday toggle label when there are no members', () => {
+    render(
+      <TeamDashboardScreen
+        team={baseTeam}
+        teams={[baseTeam]}
+        members={[]}
+        nextOrganizer={null}
+        isHolidayMode={true}
+        onBack={vi.fn()}
+        onTeamSwitch={vi.fn()}
+        onAddMember={vi.fn()}
+        onRemoveMember={vi.fn()}
+        onToggleHoliday={vi.fn()}
+        onToggleMemberAway={vi.fn()}
+        onNavigateToVote={vi.fn()}
+        onNavigateToHistory={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Your Fellowship Awaits')).toBeInTheDocument()
+    expect(screen.getByText('Active')).toBeInTheDocument()
+    expect(screen.getByLabelText('Holiday Break Mode')).toBeInTheDocument()
+  })
 })
