@@ -19,7 +19,7 @@ test.describe('CUJ: Admin', () => {
 
   test('can toggle holiday mode (UI only)', async ({ authenticatedPage: page }) => {
     await navigateAndWait(page, '/settings/test-team-001');
-    await expect(page).toHaveURL('**/settings/test-team-001', { timeout: 12000 });
+    await expect(page).toHaveURL(/\/settings\/test-team-001(?:\/)?(?:\?.*)?$/, { timeout: 12000 });
 
     // Find the toggle
     const holidayToggle = page.getByTestId('settings-holiday-toggle')

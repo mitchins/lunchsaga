@@ -138,7 +138,7 @@ test.describe('Accessibility', () => {
 
   test('interactive elements are keyboard accessible', async ({ authenticatedPage: page }) => {
     await navigateAndWait(page, '/dashboard/test-team-001');
-    await expect(page).toHaveURL('**/dashboard/test-team-001', { timeout: 12000 });
+    await expect(page).toHaveURL(/\/dashboard\/test-team-001(?:\/)?(?:\?.*)?$/, { timeout: 12000 });
 
     const focusable = page.locator(
       'button:visible, a[href]:visible, input:visible, select:visible, textarea:visible, [role="button"]:visible, [role="switch"]:visible, [tabindex]:not([tabindex="-1"]):visible'

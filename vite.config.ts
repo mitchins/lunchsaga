@@ -34,7 +34,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: [],
+    setupFiles: [resolve(projectRoot, 'tests/unit/vitest.setup.ts')],
     exclude: [...configDefaults.exclude, 'tests/e2e/**/*'],
     coverage: {
       reporter: ['text', 'lcov', 'html'],

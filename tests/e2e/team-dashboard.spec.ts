@@ -15,7 +15,7 @@ test.describe('Team Dashboard', () => {
     // Focus only on member list rendering (ui-rendering.spec already covers leaderboard)
     // This is specifically the dashboard roster/team view
     await navigateAndWait(page, '/dashboard/test-team-001');
-    await expect(page).toHaveURL('**/dashboard/test-team-001', { timeout: 12000 });
+    await expect(page).toHaveURL(/\/dashboard\/test-team-001(?:\/)?(?:\?.*)?$/, { timeout: 12000 });
 
     const rosterContent = page.locator('[data-testid="team-member"]').first().or(page.getByText('Your Fellowship Awaits'));
     const heading = page.getByRole('heading', { name: /team members/i }).first();
