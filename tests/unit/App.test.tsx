@@ -29,6 +29,7 @@ vi.mock('react-router-dom', () => ({
   BrowserRouter: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
   Routes: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
   Route: () => React.createElement('div'),
+  useMatch: () => ({ params: {} }),
   useNavigate: () => vi.fn(),
   useParams: () => ({ teamId: undefined }),
   Navigate: () => React.createElement('div'),

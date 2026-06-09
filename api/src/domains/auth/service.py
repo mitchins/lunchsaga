@@ -25,7 +25,7 @@ class AuthService:
         """Get JWT secret from environment"""
         secret = getattr(env, "JWT_SECRET", None)
         if not secret:
-            environment = getattr(env, "ENVIRONMENT", "production").lower()
+            environment = (getattr(env, "ENVIRONMENT", "production") or "production").lower()
             # Fallback for non-production environments
             if environment != "production":
                 return "dev-secret-do-not-use-in-production"
@@ -66,7 +66,7 @@ class AuthService:
         Sends email via SES in production or mock in development.
         """
         # Dev-only OTP bypass - use the configured code in non-production environments.
-        environment = getattr(env, "ENVIRONMENT", "production").lower()
+        environment = (getattr(env, "ENVIRONMENT", "production") or "production").lower()
         is_production = environment == "production"
         dev_otp = getattr(env, "DEV_OTP_CODE", None)
         code = dev_otp if (dev_otp and not is_production) else cls._generate_code()
