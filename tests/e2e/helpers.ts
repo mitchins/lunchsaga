@@ -79,11 +79,19 @@ export async function closeToasts(page: Page) {
 export async function navigateAndWait(page: Page, path: string): Promise<void> {
   await page.goto(path);
   await page.waitForLoadState('domcontentloaded');
-  
-  // For team routes, wait for member content to load
-  if (path.includes('test-team-001')) {
-    await page.waitForSelector('h3, text=/[A-Z][a-z]+/', { timeout: 10000 }).catch(() => {
-      // Content may not have loaded, but don't fail
+
+  if (path.includes('/dashboard/')) {
+    await expect(page.getByRole('heading', { name: /team members/i })).toBeVisible({ timeout: 10000 }).catch(() => {
+      // Some routes can render slightly later under CI load; callers still assert the final UI.
+    });
+  } else if (path.includes('/settings/')) {
+    const holidayToggle = page.getByRole('switch').or(page.locator('button[role="switch"]')).first();
+    await expect(holidayToggle).toBeVisible({ timeout: 10000 }).catch(() => {
+      // Settings can hydrate after DOMContentLoaded; the test will still fail if the toggle never appears.
+    });
+  } else if (path.includes('/leaderboard/')) {
+    await expect(page.getByRole('heading').first()).toBeVisible({ timeout: 10000 }).catch(() => {
+      // Leaderboard content is asserted in the test body.
     });
   }
 }
@@ -104,4 +112,3 @@ export function isValidPath(url: string, validPaths: string[]): boolean {
   if (!url) return false;
   return isRouteAllowed(url, validPaths);
 }
-

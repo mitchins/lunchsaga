@@ -27,6 +27,7 @@ test.describe('CUJ: Admin', () => {
     
     await expect(holidayToggle).toBeVisible();
     const initialState = await holidayToggle.getAttribute('aria-checked');
+    await expect(holidayToggle).toHaveAttribute('aria-checked');
     expect(initialState === 'true' || initialState === 'false').toBeTruthy();
 
     // Click it

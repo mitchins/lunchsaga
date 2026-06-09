@@ -113,31 +113,44 @@ class AuthService:
         Verify code or token, return JWT if valid.
         """
         now = datetime.now(timezone.utc)
+        link = None
 
-        # Try to find by token first
-        link = await MagicLink.objects.filter(
-            db, email=email, token=code_or_token, used=False
-        ).first()
-
-        # If not found by token, try by code for this email
-        if not link:
+        await db.prepare("BEGIN IMMEDIATE").run()
+        try:
+            # Try to find and claim by token first
             link = await MagicLink.objects.filter(
-                db, email=email, code=code_or_token, used=False
+                db, email=email, token=code_or_token, used=False
             ).first()
 
+            # If not found by token, try by code for this email.
+            if not link:
+                link = await MagicLink.objects.filter(
+                    db, email=email, code=code_or_token, used=False
+                ).first()
+
+            if link:
+                # Ensure the link is still valid right before claim.
+                expires_at = link.expires_at
+                if expires_at.tzinfo is None:
+                    # Assume UTC if no timezone info
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+                if expires_at >= now:
+                    await MagicLink.objects.filter(db, id=str(link.id), used=False).update(
+                        used=True
+                    )
+                    await db.prepare("COMMIT").run()
+                else:
+                    link = None
+                    await db.prepare("ROLLBACK").run()
+            else:
+                await db.prepare("ROLLBACK").run()
+        except Exception:
+            await db.prepare("ROLLBACK").run()
+            raise
+
         if not link:
             return None
-
-        # Check expiration - handle timezone-naive datetimes from DB
-        expires_at = link.expires_at
-        if expires_at.tzinfo is None:
-            # Assume UTC if no timezone info
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if expires_at < now:
-            return None
-
-        # Mark as used
-        await MagicLink.objects.filter(db, id=link.id).update(used=True)
 
         # Get or create user
         user = await User.objects.filter(db, email=email).first()

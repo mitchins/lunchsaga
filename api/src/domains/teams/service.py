@@ -43,16 +43,17 @@ class TeamService:
         cls, db, owner_id: str, name: str, emoji: str = "🍕", color: str = "#10b981"
     ) -> dict:
         """Create a new team and add owner as first member"""
-        team = None
-
         # Get owner's name
         owner = await User.objects.filter(db, id=owner_id).first()
         owner_name = owner.name if owner else "Unknown"
 
-        # Create team with retry-safe invite code handling.
+        team = None
+
         for _ in range(10):
-            invite_code = cls._generate_invite_code()
+            await db.prepare("BEGIN IMMEDIATE").run()
             try:
+                # Create team with retry-safe invite code handling.
+                invite_code = cls._generate_invite_code()
                 team = await Team.objects.create(
                     db,
                     name=name,
@@ -61,25 +62,26 @@ class TeamService:
                     owner_id=owner_id,
                     invite_code=invite_code,
                 )
+
+                # Add owner as first member atomically with team creation.
+                await TeamMember.objects.create(
+                    db,
+                    team_id=str(team.id),
+                    user_id=owner_id,
+                    name=owner_name,
+                )
+
+                await db.prepare("COMMIT").run()
                 break
             except Exception as exc:
+                await db.prepare("ROLLBACK").run()
+                team = None
+
                 if not cls._is_invite_code_unique_error(exc):
                     raise
 
         if not team:
             raise RuntimeError("Unable to generate a unique invite code")
-
-        # Add owner as first member
-        try:
-            await TeamMember.objects.create(
-                db,
-                team_id=str(team.id),
-                user_id=owner_id,
-                name=owner_name,
-            )
-        except Exception:
-            await Team.objects.filter(db, id=str(team.id)).delete()
-            raise
 
         return {
             "id": str(team.id),
