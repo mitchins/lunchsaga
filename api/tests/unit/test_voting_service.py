@@ -8,7 +8,7 @@ or existing happy-path unit tests.
 import pytest
 from datetime import datetime, timedelta, timezone
 
-from kinglet.testing import MockD1Database
+from kinglet.testing import D1Result, D1ResultMeta, MockD1Database
 
 from domains.voting.service import VotingService
 from models import LunchPeriod, Vote, VenueOption
@@ -75,7 +75,17 @@ class TestVotingService:
                     "UPDATE lunch_periods" in self._sql
                     and "status = 'completed'" in self._sql
                 ):
-                    return None
+                    return D1Result(
+                        results=[],
+                        meta=D1ResultMeta(
+                            duration=0.0,
+                            last_row_id=None,
+                            changes=0,
+                            rows_read=0,
+                            rows_written=0,
+                            size_after=None,
+                        ),
+                    )
                 return await self._wrapped.run()
 
         def prepare(sql):

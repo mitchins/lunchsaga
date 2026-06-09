@@ -4,7 +4,6 @@ Members Service
 Business logic for team member management.
 """
 
-from domains.auth.validators import AuthValidators
 from models import Achievement, TeamMember, User
 
 
@@ -39,15 +38,10 @@ class MembersService:
     ) -> dict | None:
         """
         Add a member to a team by email.
+        Caller is expected to pass a validated and normalized email.
         Returns None if user doesn't exist or adder is not the owner.
         """
         from models import Team
-
-        is_valid, err_msg = AuthValidators.validate_email(email)
-        if not is_valid:
-            return {"error": err_msg}
-
-        normalized_email = AuthValidators.normalize_email(email)
 
         # Verify adder is team owner
         team = await Team.objects.filter(db, id=team_id).first()
@@ -55,13 +49,13 @@ class MembersService:
             return None
 
         # Find user by email, or create a placeholder user
-        user = await User.objects.filter(db, email=normalized_email).first()
+        user = await User.objects.filter(db, email=email).first()
         if not user:
             # Auto-create user with email as name (they'll update on first login)
             user = await User.objects.create(
                 db,
-                email=normalized_email,
-                name=normalized_email.split("@")[0],  # Use email prefix as default name
+                email=email,
+                name=email.split("@")[0],  # Use email prefix as default name
             )
 
         # Check if already a member

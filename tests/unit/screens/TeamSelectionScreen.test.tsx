@@ -33,28 +33,49 @@ vi.mock('sonner', () => ({
   toast: sonnerMock,
 }))
 
+type TeamSelectionTestSetupOptions = {
+  teams?: Team[]
+  userData?: {
+    id: string
+    name: string
+    email: string
+    createdAt: number
+  }
+}
+
+const setupTeamSelectionScreen = (options: TeamSelectionTestSetupOptions = {}) => {
+  const userEventClient = userEvent.setup()
+  const onSelectTeam = vi.fn()
+  const onCreateTeam = vi.fn()
+  const onJoinTeam = vi.fn()
+
+  render(
+    <TeamSelectionScreen
+      user={options.userData ?? user}
+      teams={options.teams ?? [team]}
+      onSelectTeam={onSelectTeam}
+      onCreateTeam={onCreateTeam}
+      onJoinTeam={onJoinTeam}
+    />,
+  )
+
+  return {
+    userEventClient,
+    onSelectTeam,
+    onCreateTeam,
+    onJoinTeam,
+  }
+}
+
 describe('TeamSelectionScreen', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
   it('shows empty state text when no teams exist and creates a team', async () => {
-    const userEventClient = userEvent.setup()
-    const onSelectTeam = vi.fn()
-    const onCreateTeam = vi.fn()
-    const onJoinTeam = vi.fn()
+    const { userEventClient, onCreateTeam } = setupTeamSelectionScreen({ teams: [] })
 
     vi.spyOn(helpers, 'generateId').mockReturnValue('generated-team-id')
-
-    render(
-      <TeamSelectionScreen
-        user={user}
-        teams={[]}
-        onSelectTeam={onSelectTeam}
-        onCreateTeam={onCreateTeam}
-        onJoinTeam={onJoinTeam}
-      />,
-    )
 
     expect(screen.getByText('Gather your fellowship and begin your culinary saga')).toBeInTheDocument()
     expect(screen.queryByText('Your Teams')).not.toBeInTheDocument()
@@ -87,20 +108,7 @@ describe('TeamSelectionScreen', () => {
   })
 
   it('joins a team with a validated, uppercase invite code', async () => {
-    const userEventClient = userEvent.setup()
-    const onSelectTeam = vi.fn()
-    const onCreateTeam = vi.fn()
-    const onJoinTeam = vi.fn()
-
-    render(
-      <TeamSelectionScreen
-        user={user}
-        teams={[team]}
-        onSelectTeam={onSelectTeam}
-        onCreateTeam={onCreateTeam}
-        onJoinTeam={onJoinTeam}
-      />,
-    )
+    const { userEventClient, onSelectTeam, onJoinTeam } = setupTeamSelectionScreen()
 
     expect(screen.getByText('Your Teams')).toBeInTheDocument()
     await userEventClient.click(screen.getByText('Guild One'))
@@ -125,30 +133,13 @@ describe('TeamSelectionScreen', () => {
   })
 
   it('renders team list and lets members switch teams', async () => {
-    const userEventClient = userEvent.setup()
-    const onSelectTeam = vi.fn()
-    const onCreateTeam = vi.fn()
-    const onJoinTeam = vi.fn()
-
-    render(
-      <TeamSelectionScreen
-        user={user}
-        teams={[team]}
-        onSelectTeam={onSelectTeam}
-        onCreateTeam={onCreateTeam}
-        onJoinTeam={onJoinTeam}
-      />,
-    )
+    const { userEventClient, onSelectTeam } = setupTeamSelectionScreen()
 
     await userEventClient.click(screen.getByText('Guild One'))
     expect(onSelectTeam).toHaveBeenCalledWith(team)
   })
 
   it('shows Member label for teams owned by another user', async () => {
-    const userEventClient = userEvent.setup()
-    const onSelectTeam = vi.fn()
-    const onCreateTeam = vi.fn()
-    const onJoinTeam = vi.fn()
     const otherOwnerTeam: Team = {
       ...team,
       id: 'team-2',
@@ -156,15 +147,7 @@ describe('TeamSelectionScreen', () => {
       ownerId: 'someone-else',
     }
 
-    render(
-      <TeamSelectionScreen
-        user={user}
-        teams={[otherOwnerTeam]}
-        onSelectTeam={onSelectTeam}
-        onCreateTeam={onCreateTeam}
-        onJoinTeam={onJoinTeam}
-      />,
-    )
+    const { userEventClient, onSelectTeam } = setupTeamSelectionScreen({ teams: [otherOwnerTeam] })
 
     expect(screen.getByText('Member')).toBeInTheDocument()
     expect(screen.queryByText('Guild Master')).not.toBeInTheDocument()
@@ -174,10 +157,6 @@ describe('TeamSelectionScreen', () => {
   })
 
   it('shows Guild Master label for teams owned by the current user', async () => {
-    const userEventClient = userEvent.setup()
-    const onSelectTeam = vi.fn()
-    const onCreateTeam = vi.fn()
-    const onJoinTeam = vi.fn()
     const ownedTeam: Team = {
       ...team,
       id: 'team-3',
@@ -185,15 +164,7 @@ describe('TeamSelectionScreen', () => {
       ownerId: 'user-1',
     }
 
-    render(
-      <TeamSelectionScreen
-        user={user}
-        teams={[ownedTeam]}
-        onSelectTeam={onSelectTeam}
-        onCreateTeam={onCreateTeam}
-        onJoinTeam={onJoinTeam}
-      />,
-    )
+    const { userEventClient, onSelectTeam } = setupTeamSelectionScreen({ teams: [ownedTeam] })
 
     expect(screen.getByText('Guild Master')).toBeInTheDocument()
     expect(screen.queryByText('Member')).not.toBeInTheDocument()
@@ -203,20 +174,7 @@ describe('TeamSelectionScreen', () => {
   })
 
   it('can close the create-team dialog without creating a team', async () => {
-    const userEventClient = userEvent.setup()
-    const onSelectTeam = vi.fn()
-    const onCreateTeam = vi.fn()
-    const onJoinTeam = vi.fn()
-
-    render(
-      <TeamSelectionScreen
-        user={user}
-        teams={[team]}
-        onSelectTeam={onSelectTeam}
-        onCreateTeam={onCreateTeam}
-        onJoinTeam={onJoinTeam}
-      />,
-    )
+    const { userEventClient, onCreateTeam } = setupTeamSelectionScreen()
 
     await userEventClient.click(screen.getByText('Forge New Fellowship'))
     const createDialog = await screen.findByRole('dialog')
@@ -227,20 +185,7 @@ describe('TeamSelectionScreen', () => {
   })
 
   it('can close the join-team dialog without joining', async () => {
-    const userEventClient = userEvent.setup()
-    const onSelectTeam = vi.fn()
-    const onCreateTeam = vi.fn()
-    const onJoinTeam = vi.fn()
-
-    render(
-      <TeamSelectionScreen
-        user={user}
-        teams={[team]}
-        onSelectTeam={onSelectTeam}
-        onCreateTeam={onCreateTeam}
-        onJoinTeam={onJoinTeam}
-      />,
-    )
+    const { userEventClient, onJoinTeam } = setupTeamSelectionScreen()
 
     await userEventClient.click(screen.getByText('Join Fellowship'))
     const joinDialog = await screen.findByRole('dialog')
@@ -251,20 +196,7 @@ describe('TeamSelectionScreen', () => {
   })
 
   it('does not submit create-team when team name is blank', async () => {
-    const userEventClient = userEvent.setup()
-    const onSelectTeam = vi.fn()
-    const onCreateTeam = vi.fn()
-    const onJoinTeam = vi.fn()
-
-    render(
-      <TeamSelectionScreen
-        user={user}
-        teams={[team]}
-        onSelectTeam={onSelectTeam}
-        onCreateTeam={onCreateTeam}
-        onJoinTeam={onJoinTeam}
-      />,
-    )
+    const { userEventClient, onCreateTeam } = setupTeamSelectionScreen()
 
     await userEventClient.click(screen.getByText('Forge New Fellowship'))
     const createDialog = await screen.findByRole('dialog')
@@ -277,20 +209,7 @@ describe('TeamSelectionScreen', () => {
   })
 
   it('does not submit join-team when invite code is blank', async () => {
-    const userEventClient = userEvent.setup()
-    const onSelectTeam = vi.fn()
-    const onCreateTeam = vi.fn()
-    const onJoinTeam = vi.fn()
-
-    render(
-      <TeamSelectionScreen
-        user={user}
-        teams={[team]}
-        onSelectTeam={onSelectTeam}
-        onCreateTeam={onCreateTeam}
-        onJoinTeam={onJoinTeam}
-      />,
-    )
+    const { userEventClient, onJoinTeam } = setupTeamSelectionScreen()
 
     await userEventClient.click(screen.getByText('Join Fellowship'))
     const joinDialog = await screen.findByRole('dialog')

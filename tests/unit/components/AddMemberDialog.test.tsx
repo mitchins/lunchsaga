@@ -4,12 +4,18 @@ import userEvent from '@testing-library/user-event'
 
 import { AddMemberDialog } from '@/components/AddMemberDialog'
 
+const setupAddMemberDialog = () => {
+  const user = userEvent.setup()
+  const onAdd = vi.fn()
+
+  render(<AddMemberDialog onAdd={onAdd} averagePoints={7} />)
+
+  return { user, onAdd }
+}
+
 describe('AddMemberDialog', () => {
   it('submits a trimmed email and closes the dialog', async () => {
-    const user = userEvent.setup()
-    const onAdd = vi.fn()
-
-    render(<AddMemberDialog onAdd={onAdd} averagePoints={7} />)
+    const { user, onAdd } = setupAddMemberDialog()
 
     await user.click(screen.getByRole('button', { name: 'Add Member' }))
     const dialog = await screen.findByRole('dialog')
@@ -30,10 +36,7 @@ describe('AddMemberDialog', () => {
   })
 
   it('does not submit when the email field is blank', async () => {
-    const user = userEvent.setup()
-    const onAdd = vi.fn()
-
-    render(<AddMemberDialog onAdd={onAdd} averagePoints={7} />)
+    const { user, onAdd } = setupAddMemberDialog()
 
     await user.click(screen.getByRole('button', { name: 'Add Member' }))
     const dialog = await screen.findByRole('dialog')

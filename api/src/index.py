@@ -4,6 +4,8 @@ LunchSaga API Entry Point
 Main entry point for the Cloudflare Python Worker using Kinglet framework.
 """
 
+import logging
+
 from kinglet import Kinglet
 from kinglet.middleware import CorsMiddleware
 
@@ -85,7 +87,8 @@ async def migrate_database(request):
 
     try:
         results = await SchemaManager.migrate_all(request.env.DB, models)
-    except Exception:
+    except Exception as e:
+        logging.exception("Migration failed")
         return {"error": "Migration failed"}, 500
 
     return {
@@ -149,11 +152,23 @@ async def reset_database(request):
         except Exception:
             drop_failures.append(model.Meta.table_name)
 
+    if drop_failures:
+        return {
+            "error": "Failed to drop tables",
+            "droppedTables": dropped_tables,
+            "failed": drop_failures,
+        }, 500
+
     # Recreate all tables
     try:
         results = await SchemaManager.migrate_all(request.env.DB, models)
-    except Exception:
-        return {"error": "Reset failed"}, 500
+    except Exception as e:
+        logging.exception("Reset failed")
+        return {
+            "error": "Reset failed",
+            "droppedTables": dropped_tables,
+            "droppedTableErrors": drop_failures,
+        }, 500
 
     return {
         "status": "reset_complete",

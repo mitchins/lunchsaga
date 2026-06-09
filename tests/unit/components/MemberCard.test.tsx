@@ -18,15 +18,53 @@ const baseMember: TeamMember = {
   joinedAt: 1,
 }
 
+type MemberCardRenderOptions = {
+  member?: TeamMember
+  isNextOrganizer?: boolean
+  onToggleAway?: ReturnType<typeof vi.fn>
+  onRemove?: ReturnType<typeof vi.fn>
+  showRemove?: boolean
+  setupUser?: boolean
+}
+
+const setupMemberCard = (options: MemberCardRenderOptions = {}) => {
+  const {
+    member = baseMember,
+    isNextOrganizer = false,
+    onToggleAway = vi.fn(),
+    onRemove = vi.fn(),
+    showRemove = true,
+    setupUser = false,
+  } = options
+
+  const user = setupUser ? userEvent.setup() : undefined
+
+  const result = {
+    onToggleAway,
+    onRemove,
+    ...(user ? { user } : {}),
+  }
+
+  render(
+    <MemberCard
+      member={member}
+      isNextOrganizer={isNextOrganizer}
+      onToggleAway={onToggleAway}
+      onRemove={onRemove}
+      showRemove={showRemove}
+    />,
+  )
+
+  return result
+}
+
 describe('MemberCard', () => {
   it('renders key details and organizer badge', () => {
-    render(
-      <MemberCard
-        member={baseMember}
-        isNextOrganizer={true}
-        onRemove={vi.fn()}
-      />,
-    )
+    setupMemberCard({
+      member: baseMember,
+      isNextOrganizer: true,
+      onRemove: vi.fn(),
+    })
 
     expect(screen.getByText('AL')).toBeInTheDocument()
     expect(screen.getByText('Herald of the Feast')).toBeInTheDocument()
@@ -36,18 +74,15 @@ describe('MemberCard', () => {
   })
 
   it('expands details, forwards away and remove actions', async () => {
-    const user = userEvent.setup()
     const onToggleAway = vi.fn()
     const onRemove = vi.fn()
-
-    render(
-      <MemberCard
-        member={baseMember}
-        isNextOrganizer={false}
-        onToggleAway={onToggleAway}
-        onRemove={onRemove}
-      />,
-    )
+    const { user } = setupMemberCard({
+      member: baseMember,
+      isNextOrganizer: false,
+      onToggleAway,
+      onRemove,
+      setupUser: true,
+    })
 
     await user.click(screen.getByText('Ada Lovelace'))
 
@@ -62,20 +97,18 @@ describe('MemberCard', () => {
   })
 
   it('shows away state and hides removal when requested', async () => {
-    const user = userEvent.setup()
     const awayMember: TeamMember = { ...baseMember, id: 'member-2', name: 'L. Away', isAway: true }
     const onToggleAway = vi.fn()
     const onRemove = vi.fn()
 
-    render(
-      <MemberCard
-        member={awayMember}
-        isNextOrganizer={true}
-        onToggleAway={onToggleAway}
-        onRemove={onRemove}
-        showRemove={false}
-      />,
-    )
+    const { user } = setupMemberCard({
+      member: awayMember,
+      isNextOrganizer: true,
+      onToggleAway,
+      onRemove,
+      showRemove: false,
+      setupUser: true,
+    })
 
     await user.click(screen.getByText('L. Away'))
 
@@ -88,41 +121,34 @@ describe('MemberCard', () => {
   })
 
   it('shows singular victory label when member has exactly one win', () => {
-    render(
-      <MemberCard
-        member={{ ...baseMember, id: 'member-3', name: 'Single Win', totalWins: 1, totalVenuesProposed: 2 }}
-        isNextOrganizer={false}
-        onRemove={vi.fn()}
-      />,
-    )
+    setupMemberCard({
+      member: { ...baseMember, id: 'member-3', name: 'Single Win', totalWins: 1, totalVenuesProposed: 2 },
+      onRemove: vi.fn(),
+    })
 
     expect(screen.getByText('1 victory')).toBeInTheDocument()
   })
 
   it('hides win counter when member has no wins', () => {
-    render(
-      <MemberCard
-        member={{ ...baseMember, id: 'member-4', name: 'Fresh Rider', totalWins: 0 }}
-        isNextOrganizer={false}
-        onRemove={vi.fn()}
-      />,
-    )
+    setupMemberCard({
+      member: { ...baseMember, id: 'member-4', name: 'Fresh Rider', totalWins: 0 },
+      onRemove: vi.fn(),
+    })
 
     expect(screen.queryByText(/victory/)).not.toBeInTheDocument()
   })
 
   it('treats missing away flag as not away', async () => {
-    const user = userEvent.setup()
-
-    render(
-      <MemberCard
-        member={{ ...baseMember, id: 'member-5', isAway: undefined as unknown as boolean, name: 'No Away Flag' }}
-        isNextOrganizer={false}
-        onRemove={vi.fn()}
-      />,
-    )
-
-    user.click(screen.getByText('No Away Flag'))
+    const { user } = setupMemberCard({
+      member: {
+        ...baseMember,
+        id: 'member-5',
+        isAway: undefined as unknown as boolean,
+        name: 'No Away Flag',
+      },
+      onRemove: vi.fn(),
+      setupUser: true,
+    })
 
     await user.click(screen.getByText('No Away Flag'))
 

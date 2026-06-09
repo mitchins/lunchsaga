@@ -29,10 +29,10 @@ test.describe('CUJ: Admin', () => {
     expect(initialState === 'true' || initialState === 'false').toBeTruthy();
 
     const toggleAndVerify = async (targetState: string) => {
-      const request = page.waitForResponse((response) =>
-        response.request().method() === 'PUT' &&
-        response.url().endsWith('/api/teams/test-team-001')
-      );
+      const request = page.waitForResponse((response) => {
+        const pathname = new URL(response.url()).pathname
+        return response.request().method() === 'PUT' && pathname === '/api/teams/test-team-001'
+      });
       await holidayToggle.click();
       const response = await request;
       expect(response.ok()).toBeTruthy();

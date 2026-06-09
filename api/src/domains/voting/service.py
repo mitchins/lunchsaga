@@ -193,116 +193,169 @@ class VotingService:
         cls, db, period_id: str, venue_id: str, member_id: str
     ) -> dict:
         """Cast or change a vote"""
-        period = await LunchPeriod.objects.filter(db, id=period_id).first()
-        if not period or period.status != "voting":
-            return {"error": "Voting is not open"}
+        transaction_started = False
 
-        # Check venue exists for this period
-        venue = await VenueOption.objects.filter(
-            db, id=venue_id, period_id=period_id
-        ).first()
-        if not venue:
-            return {"error": "Venue not found"}
+        async def _safe_rollback(active_txn: bool) -> None:
+            if not active_txn:
+                return
+            try:
+                await db.prepare("ROLLBACK").run()
+            except Exception:
+                pass
 
-        # Check for existing vote
-        existing = await Vote.objects.filter(
-            db, period_id=period_id, member_id=member_id
-        ).first()
-
-        if existing:
-            if existing.venue_id == venue_id:
-                # Already voted for this venue - remove vote (toggle)
-                await Vote.objects.filter(db, id=existing.id).delete()
-                await cls._increment_venue_vote_count(db, venue_id, -1)
-                result = {"voted": False, "action": "removed"}
+        try:
+            await db.prepare("BEGIN IMMEDIATE").run()
+            transaction_started = True
+        except Exception as exc:
+            message = str(exc)
+            if "To execute a transaction" in message and "state.storage.transaction" in message:
+                transaction_started = False
             else:
-                # Change vote - decrement old, increment new
-                await cls._increment_venue_vote_count(db, existing.venue_id, -1)
-                try:
-                    await Vote.objects.filter(db, id=existing.id).update(venue_id=venue_id)
-                    await cls._increment_venue_vote_count(db, venue_id, 1)
-                    result = {"voted": True, "action": "changed"}
-                except Exception:
-                    # Roll back vote count change on venue switch if row update fails.
-                    await cls._increment_venue_vote_count(db, existing.venue_id, 1)
-                    raise
-        else:
-            # New vote
-            await Vote.objects.create(
-                db,
-                period_id=period_id,
-                venue_id=venue_id,
-                member_id=member_id,
-            )
-            await cls._increment_venue_vote_count(db, venue_id, 1)
-            result = {"voted": True, "action": "added"}
+                raise
 
-        return result
+        try:
+            period = await LunchPeriod.objects.filter(db, id=period_id).first()
+            if not period or period.status != "voting":
+                await _safe_rollback(transaction_started)
+                return {"error": "Voting is not open"}
+
+            # Check venue exists for this period (re-checked before writing).
+            venue = await VenueOption.objects.filter(
+                db, id=venue_id, period_id=period_id
+            ).first()
+            if not venue:
+                await _safe_rollback(transaction_started)
+                return {"error": "Venue not found"}
+
+            # Check for existing vote
+            existing = await Vote.objects.filter(
+                db, period_id=period_id, member_id=member_id
+            ).first()
+
+            if existing:
+                if existing.venue_id == venue_id:
+                    # Already voted for this venue - remove vote (toggle)
+                    await Vote.objects.filter(db, id=existing.id).delete()
+                    await cls._increment_venue_vote_count(db, venue_id, -1)
+                    result = {"voted": False, "action": "removed"}
+                else:
+                    # Change vote - decrement old, increment new
+                    await cls._increment_venue_vote_count(db, existing.venue_id, -1)
+                    try:
+                        await Vote.objects.filter(db, id=existing.id).update(venue_id=venue_id)
+                        await cls._increment_venue_vote_count(db, venue_id, 1)
+                        result = {"voted": True, "action": "changed"}
+                    except Exception:
+                        # Roll back vote count change on venue switch if row update fails.
+                        await cls._increment_venue_vote_count(db, existing.venue_id, 1)
+                        raise
+            else:
+                # New vote
+                await Vote.objects.create(
+                    db,
+                    period_id=period_id,
+                    venue_id=venue_id,
+                    member_id=member_id,
+                )
+                await cls._increment_venue_vote_count(db, venue_id, 1)
+                result = {"voted": True, "action": "added"}
+
+            if transaction_started:
+                await db.prepare("COMMIT").run()
+            return result
+
+        except Exception:
+            await _safe_rollback(transaction_started)
+            raise
 
     @classmethod
     async def complete_period(cls, db, period_id: str, organizer_id: str) -> dict | None:
         """Complete the voting period and determine winner"""
-        period = await LunchPeriod.objects.filter(db, id=period_id).first()
-        if not period:
-            return None
+        transaction_started = False
 
-        # Verify organizer
-        if period.organizer_id != organizer_id:
-            return None
+        async def _safe_rollback(active_txn: bool) -> None:
+            if not active_txn:
+                return
+            try:
+                await db.prepare("ROLLBACK").run()
+            except Exception:
+                pass
 
-        if period.status == "completed":
-            return await cls._format_period(db, period)
+        try:
+            await db.prepare("BEGIN IMMEDIATE").run()
+            transaction_started = True
+        except Exception as exc:
+            message = str(exc)
+            if "To execute a transaction" in message and "state.storage.transaction" in message:
+                transaction_started = False
+            else:
+                raise
 
-        if period.status != "voting":
-            return None
+        try:
+            period = await LunchPeriod.objects.filter(db, id=period_id).first()
+            if not period:
+                await _safe_rollback(transaction_started)
+                return None
 
-        # Find venue with most votes
-        venues = await VenueOption.objects.filter(db, period_id=period_id).all()
+            # Verify organizer
+            if period.organizer_id != organizer_id:
+                await _safe_rollback(transaction_started)
+                return None
 
-        if not venues:
-            return None
-
-        winner = sorted(
-            venues,
-            key=lambda candidate: (
-                -candidate.vote_count,
-                candidate.created_at,
-                str(candidate.id),
-            ),
-        )[0]
-        now = int(datetime.now(timezone.utc).timestamp() * 1000)
-        await db.prepare(
-            """
-            UPDATE lunch_periods
-            SET status = 'completed',
-                winning_venue_id = ?,
-                end_date = ?
-            WHERE id = ? AND status = 'voting'
-            """
-        ).bind(str(winner.id), now, str(period_id)).run()
-
-        period = await LunchPeriod.objects.filter(db, id=period_id).first()
-        if not period or period.status != "completed":
-            # Someone else won this period in parallel or transition failed.
-            return await cls._format_period(db, period) if period else None
-        if period.winning_venue_id != str(winner.id):
-            winner = await VenueOption.objects.filter(
-                db, id=period.winning_venue_id
-            ).first()
-            if winner is None:
+            if period.status == "completed":
+                await _safe_rollback(transaction_started)
                 return await cls._format_period(db, period)
-            return await cls._format_period(db, period)
 
-        # Update organizer stats
-        await RotationService.increment_organizer_points(db, organizer_id)
+            if period.status != "voting":
+                await _safe_rollback(transaction_started)
+                return None
 
-        # Update winner stats if there were votes
-        if winner.vote_count > 0:
-            await RotationService.record_winner(db, winner.proposed_by)
+            # Find venue with most votes
+            venues = await VenueOption.objects.filter(db, period_id=period_id).all()
 
-        # Return updated period
-        period = await LunchPeriod.objects.filter(db, id=period_id).first()
-        return await cls._format_period(db, period)
+            if not venues:
+                await _safe_rollback(transaction_started)
+                return None
+
+            winner = sorted(
+                venues,
+                key=lambda candidate: (
+                    -candidate.vote_count,
+                    candidate.created_at,
+                    str(candidate.id),
+                ),
+            )[0]
+
+            now = int(datetime.now(timezone.utc).timestamp() * 1000)
+            result = await db.prepare(
+                """
+                UPDATE lunch_periods
+                SET status = 'completed',
+                    winning_venue_id = ?,
+                    end_date = ?
+                WHERE id = ? AND status = 'voting'
+                """
+            ).bind(str(winner.id), now, str(period_id)).run()
+
+            if result.meta.changes != 1:
+                await _safe_rollback(transaction_started)
+                current_period = await LunchPeriod.objects.filter(db, id=period_id).first()
+                return await cls._format_period(db, current_period) if current_period else None
+
+            # Update organizer stats and winner stats only for the winner commit.
+            await RotationService.increment_organizer_points(db, organizer_id)
+            if winner.vote_count > 0:
+                await RotationService.record_winner(db, winner.proposed_by)
+
+            if transaction_started:
+                await db.prepare("COMMIT").run()
+
+            period = await LunchPeriod.objects.filter(db, id=period_id).first()
+            return await cls._format_period(db, period) if period else None
+
+        except Exception:
+            await _safe_rollback(transaction_started)
+            raise
 
     @classmethod
     async def get_period_history(

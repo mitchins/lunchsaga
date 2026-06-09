@@ -6,6 +6,7 @@ invite codes, and member rotation.
 """
 
 import secrets
+from datetime import datetime, timezone
 import string
 
 from models import Team, TeamMember, User
@@ -22,17 +23,6 @@ class TeamService:
         alphabet = string.ascii_uppercase + string.digits
         return "".join(secrets.choice(alphabet) for _ in range(TeamService.INVITE_CODE_LENGTH))
 
-    @classmethod
-    async def _generate_unique_invite_code(cls, db) -> str:
-        """Generate an invite code that is not already assigned."""
-        for _ in range(10):
-            invite_code = cls._generate_invite_code()
-            existing = await Team.objects.filter(db, invite_code=invite_code).first()
-            if not existing:
-                return invite_code
-
-        raise RuntimeError("Unable to generate a unique invite code")
-
     @staticmethod
     def _is_invite_code_unique_error(exc: Exception) -> bool:
         message = str(exc).lower()
@@ -46,40 +36,51 @@ class TeamService:
         # Get owner's name
         owner = await User.objects.filter(db, id=owner_id).first()
         owner_name = owner.name if owner else "Unknown"
-
-        team = None
+        now = int(datetime.now(timezone.utc).timestamp())
 
         for _ in range(10):
+            invite_code = cls._generate_invite_code()
+
+            team_insert = db.prepare(
+                """
+                INSERT INTO teams (name, emoji, color, owner_id, invite_code, is_holiday_mode, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """
+            ).bind(name, emoji, color, owner_id, invite_code, 0, now)
+
+            owner_insert = db.prepare(
+                """
+                INSERT INTO team_members (
+                    team_id,
+                    user_id,
+                    name,
+                    points,
+                    reputation_score,
+                    total_venues_proposed,
+                    total_wins,
+                    is_away,
+                    joined_at
+                )
+                SELECT id, ?, ?, 0, 0, 0, 0, 0, ? FROM teams WHERE invite_code = ?
+                """
+            ).bind(owner_id, owner_name, now, invite_code)
+
             try:
-                # Create team with retry-safe invite code handling.
-                invite_code = cls._generate_invite_code()
-                team = await Team.objects.create(
-                    db,
-                    name=name,
-                    emoji=emoji,
-                    color=color,
-                    owner_id=owner_id,
-                    invite_code=invite_code,
-                )
+                create_results = await db.batch([team_insert, owner_insert])
+                if create_results[1].meta.changes != 1:
+                    raise RuntimeError("Failed to add owner as first team member")
+                team_id = str(create_results[0].meta.last_row_id)
+                team = await Team.objects.filter(db, id=team_id).first()
 
-                # Add owner as first member atomically with team creation.
-                await TeamMember.objects.create(
-                    db,
-                    team_id=str(team.id),
-                    user_id=owner_id,
-                    name=owner_name,
-                )
+                if not team:
+                    raise RuntimeError("Failed to create team row")
+
+                break
             except Exception as exc:
-                if team is not None:
-                    await Team.objects.filter(db, id=str(team.id)).delete()
-                    team = None
-
                 if not cls._is_invite_code_unique_error(exc):
                     raise
-
                 continue
-
-        if not team:
+        else:
             raise RuntimeError("Unable to generate a unique invite code")
 
         return {

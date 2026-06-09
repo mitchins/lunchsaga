@@ -45,7 +45,7 @@ export const test = base.extend<AuthFixtures>({
 
     // Start with token set before the first routed render so team-scoped routes
     // can resolve team context in a single navigation pass.
-    await page.goto('/');
+    await page.goto(`/dashboard/${MOCK_TEAM_ID}`);
 
     const waitForAuth = page.waitForResponse(
       (response) => response.url().includes('/api/auth/me') && response.status() === 200,
@@ -62,8 +62,6 @@ export const test = base.extend<AuthFixtures>({
         response.url().includes(`/api/teams/${MOCK_TEAM_ID}/members`) && response.status() === 200,
       { timeout: 8000 }
     )
-
-    await page.goto(`/dashboard/${MOCK_TEAM_ID}`);
 
     const bootstrapChecks = await Promise.allSettled([waitForAuth, waitForTeams, waitForMembers]);
     if (bootstrapChecks.every((result) => result.status === 'rejected')) {
