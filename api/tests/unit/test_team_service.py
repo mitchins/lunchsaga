@@ -57,3 +57,78 @@ class TestTeamService:
         assert (
             await Achievement.objects.filter(db, member_id=str(member.id)).first() is None
         )
+
+    @pytest.mark.asyncio
+    async def test_leave_team_returns_false_if_team_missing(self, db):
+        assert await TeamService.leave_team(db, "missing-team", "owner@example.com") is False
+
+    @pytest.mark.asyncio
+    async def test_leave_team_returns_false_if_user_is_owner(self, db):
+        owner = await User.objects.create(db, email="owner@example.com", name="Owner")
+        team = await Team.objects.create(
+            db,
+            name="Owner Team",
+            emoji="🍕",
+            color="#10b981",
+            owner_id=str(owner.id),
+            invite_code="OWNER1",
+        )
+        await TeamMember.objects.create(
+            db,
+            team_id=str(team.id),
+            user_id=str(owner.id),
+            name="Owner",
+        )
+
+        assert (
+            await TeamService.leave_team(db, str(team.id), str(owner.id))
+            is False
+        )
+        assert (
+            await TeamMember.objects.filter(db, team_id=str(team.id), user_id=str(owner.id)).first()
+            is not None
+        )
+
+    @pytest.mark.asyncio
+    async def test_leave_team_returns_false_if_user_not_member(self, db):
+        owner = await User.objects.create(db, email="owner@example.com", name="Owner")
+        stranger = await User.objects.create(
+            db, email="stranger@example.com", name="Stranger"
+        )
+        team = await Team.objects.create(
+            db,
+            name="Team Without Stranger",
+            emoji="🍕",
+            color="#10b981",
+            owner_id=str(owner.id),
+            invite_code="MEMBER1",
+        )
+        await TeamMember.objects.create(
+            db,
+            team_id=str(team.id),
+            user_id=str(owner.id),
+            name="Owner",
+        )
+
+        assert (
+            await TeamService.leave_team(db, str(team.id), str(stranger.id))
+            is False
+        )
+        assert (
+            await TeamMember.objects.filter(db, team_id=str(team.id), user_id=str(owner.id)).first()
+            is not None
+        )
+
+    def test_is_invite_code_unique_error(self):
+        assert (
+            TeamService._is_invite_code_unique_error(
+                Exception("UNIQUE constraint failed: teams.invite_code")
+            )
+            is True
+        )
+        assert (
+            TeamService._is_invite_code_unique_error(
+                Exception("UNIQUE constraint failed: teams.name")
+            )
+            is False
+        )

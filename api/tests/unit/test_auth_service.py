@@ -8,6 +8,7 @@ These tests use:
 
 import pytest
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 
 from kinglet.testing import MockD1Database, MockEmailSender
 
@@ -291,6 +292,29 @@ class TestAuthService:
         # Verify email wasn't changed
         updated_user = await User.objects.filter(db, id=user.id).first()
         assert updated_user.email == email  # Original email unchanged
+
+    @pytest.mark.parametrize(
+        ("environment_value", "expected"),
+        [
+            ("development", True),
+            ("Development", True),
+            (" dev ", True),
+            ("test", True),
+            ("local", True),
+            ("production", False),
+            ("staging", False),
+            (None, False),
+        ],
+    )
+    def test_is_dev_environment(self, environment_value, expected):
+        env = SimpleNamespace(ENVIRONMENT=environment_value)
+        assert AuthService._is_dev_environment(env) is expected
+
+    def test_is_dev_environment_missing_env_value(self):
+        class EmptyEnv:
+            pass
+
+        assert AuthService._is_dev_environment(EmptyEnv()) is False
 
 
 # NOTE: TestEmailIntegration tests removed because Kinglet 1.8.3 changed from
