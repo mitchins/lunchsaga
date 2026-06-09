@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import type { ReactElement } from 'react'
 import {
   BrowserRouter,
   Navigate,
@@ -157,7 +158,7 @@ function AppRouter() {
     null
 
   // Derived state
-  const selectedTeam = selectedTeamId ? teams.find((t) => t.id === selectedTeamId) : null
+  const selectedTeam = selectedTeamId ? teams.find((t) => t.id === selectedTeamId) ?? null : null
   const teamMembers = selectedTeamId ? members.filter((m) => m.teamId === selectedTeamId) : []
   const nextOrganizer = getNextOrganizer(teamMembers)
   const isSelectedTeamDataReady = selectedTeamId !== null && loadedTeamDataId === selectedTeamId && !isTeamDataLoading
@@ -227,14 +228,14 @@ function AppRouter() {
     loadTeams()
   }, [user])
 
-  const renderTeamRoute = (teamRoute: JSX.Element) => {
+  const renderTeamRoute = (teamRoute: (team: Team) => ReactElement) => {
     if (selectedTeamId && !isTeamListReady) {
       return <LoadingScreen />
     }
     if (!selectedTeam) {
       return <Navigate to="/teams" replace />
     }
-    return teamRoute
+    return teamRoute(selectedTeam)
   }
 
   // Load team members when team is selected
@@ -531,9 +532,9 @@ function AppRouter() {
       <Route
         path="/dashboard/:teamId"
         element={
-          renderTeamRoute(
+          renderTeamRoute((team) =>
             <TeamDashboardScreen
-              team={selectedTeam}
+              team={team}
               teams={teams}
               members={teamMembers}
               currentUserMemberId={currentUserMember?.id}
@@ -594,8 +595,8 @@ function AppRouter() {
         path="/settings/:teamId"
         element={
           renderTeamRoute(
-            <SettingsScreen
-              team={selectedTeam}
+            (team) => <SettingsScreen
+              team={team}
               isHolidayMode={isHolidayMode}
               onBack={handleBack}
               onToggleHoliday={handleToggleHoliday}

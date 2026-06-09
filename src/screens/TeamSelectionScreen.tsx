@@ -37,6 +37,7 @@ export function TeamSelectionScreen({ user, teams, onSelectTeam, onCreateTeam, o
       emoji: selectedEmoji,
       color: selectedColor.value,
       ownerId: user.id,
+      isHolidayMode: false,
       createdAt: Date.now(),
       inviteCode: '', // API will generate the real invite code
     }
