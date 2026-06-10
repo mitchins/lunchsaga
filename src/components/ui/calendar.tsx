@@ -1,10 +1,28 @@
 import { ComponentProps } from "react"
-import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left"
-import ChevronRight from "lucide-react/dist/esm/icons/chevron-right"
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react"
 import { DayPicker } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+
+// react-day-picker v9 reuses Chevron for both month nav (left/right) and
+// dropdown nav (up/down). Defined at module scope so it isn't recreated on
+// every Calendar render.
+function CalendarChevron({
+  className,
+  orientation,
+}: Readonly<{
+  className?: string
+  orientation?: "left" | "right" | "up" | "down"
+}>) {
+  const Icon = {
+    left: ChevronLeft,
+    right: ChevronRight,
+    up: ChevronUp,
+    down: ChevronDown,
+  }[orientation ?? "right"]
+  return <Icon className={cn("size-4", className)} />
+}
 
 function Calendar({
   className,
@@ -59,12 +77,7 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        PreviousMonthButton: ({ className, ...props }) => (
-          <ChevronLeft className={cn("size-4", className)} {...props} />
-        ),
-        NextMonthButton: ({ className, ...props }) => (
-          <ChevronRight className={cn("size-4", className)} {...props} />
-        ),
+        Chevron: CalendarChevron,
       }}
       {...props}
     />
