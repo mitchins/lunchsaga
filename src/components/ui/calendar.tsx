@@ -1,5 +1,5 @@
 import { ComponentProps } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react"
 import { DayPicker } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
@@ -59,7 +59,14 @@ function Calendar({
       }}
       components={{
         Chevron: ({ className, orientation }) => {
-          const Icon = orientation === "left" ? ChevronLeft : ChevronRight
+          // react-day-picker v9 uses Chevron for both month nav (left/right)
+          // and dropdown nav (up/down).
+          const Icon = {
+            left: ChevronLeft,
+            right: ChevronRight,
+            up: ChevronUp,
+            down: ChevronDown,
+          }[orientation ?? "right"]
           return <Icon className={cn("size-4", className)} />
         },
       }}
