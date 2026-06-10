@@ -3,7 +3,71 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      # Interdependent families below intentionally have no update-types filter:
+      # majors are batched *with* minor/patch so the whole family moves atomically
+      # (a partial major bump across separate PRs leaves a broken peer-dep state).
+      # Packages not matched by any named group fall through to `minor-and-patch`.
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "react-router*"
+          - "@types/react"
+          - "@types/react-dom"
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+      testing:
+        patterns:
+          - "@playwright/*"
+          - "playwright"
+          - "@axe-core/*"
+          - "vitest"
+          - "@vitest/*"
+          - "@testing-library/*"
+          - "happy-dom"
+          - "jsdom"
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "tw-animate-css"
+      lint:
+        patterns:
+          - "eslint"
+          - "@eslint/*"
+          - "eslint-plugin-*"
+          - "typescript-eslint"
+          - "@typescript-eslint/*"
+          - "globals"
+      # Catch-all for packages not in a family group above: batch low-risk
+      # minor/patch bumps into one PR. Standalone majors are deliberately
+      # excluded here so they arrive as individual PRs for isolated review.
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Keep the SHA-pinned actions in the workflows current. Without this they
+  # silently rot at whatever commit they were first pinned to. Actions are
+  # independent (not a family), so only batch minor/patch; a breaking major
+  # gets its own PR rather than blocking unrelated action bumps.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "devcontainers"
     directory: "/"
