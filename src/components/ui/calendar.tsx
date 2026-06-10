@@ -11,10 +11,10 @@ import { buttonVariants } from "@/components/ui/button"
 function CalendarChevron({
   className,
   orientation,
-}: {
+}: Readonly<{
   className?: string
   orientation?: "left" | "right" | "up" | "down"
-}) {
+}>) {
   const Icon = {
     left: ChevronLeft,
     right: ChevronRight,
