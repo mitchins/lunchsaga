@@ -5,6 +5,25 @@ import { DayPicker } from "react-day-picker"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 
+// react-day-picker v9 reuses Chevron for both month nav (left/right) and
+// dropdown nav (up/down). Defined at module scope so it isn't recreated on
+// every Calendar render.
+function CalendarChevron({
+  className,
+  orientation,
+}: {
+  className?: string
+  orientation?: "left" | "right" | "up" | "down"
+}) {
+  const Icon = {
+    left: ChevronLeft,
+    right: ChevronRight,
+    up: ChevronUp,
+    down: ChevronDown,
+  }[orientation ?? "right"]
+  return <Icon className={cn("size-4", className)} />
+}
+
 function Calendar({
   className,
   classNames,
@@ -58,17 +77,7 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        Chevron: ({ className, orientation }) => {
-          // react-day-picker v9 uses Chevron for both month nav (left/right)
-          // and dropdown nav (up/down).
-          const Icon = {
-            left: ChevronLeft,
-            right: ChevronRight,
-            up: ChevronUp,
-            down: ChevronDown,
-          }[orientation ?? "right"]
-          return <Icon className={cn("size-4", className)} />
-        },
+        Chevron: CalendarChevron,
       }}
       {...props}
     />
